@@ -57,8 +57,21 @@ The available configuration parameters are:
 1. On the target machine, clone this repository:
 
 	```sh
+	sudo apt install git
 	git clone https://github.com/cgomesu/rpi-sensehat-mqtt.git
 	```
+
+1. Install the requisites:
+
+	```sh
+	sudo apt install python3 python3-pip
+	pip3 install --upgrade pip
+	pip3 install -r requirements.txt
+	```
+
+1. Make sure your `$USER` can find its Python modules by adding `~/.local/bin` to its `$PATH`.
+
+1. Edit the environmental variables in `rpi_sensehat_mqtt.env` to match your configuration (see [How-To](#how-to)).
 
 1. Run the following command:
 
