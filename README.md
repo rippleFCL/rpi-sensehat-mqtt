@@ -52,7 +52,7 @@ The available configuration parameters are:
 	./usr/src/sense-hat/examples/python-sense-hat/rainbow.py
 	```
 
-1. [Callibrate the magnetometer and accelerometers](https://www.raspberrypi.com/documentation/accessories/sense-hat.html#calibration).
+1. (Optional.) [Callibrate the magnetometer](https://www.raspberrypi.com/documentation/accessories/sense-hat.html#calibration). (This will install many additional packages and will take some time to complete.)
 
 1. On the target machine, clone this repository:
 
