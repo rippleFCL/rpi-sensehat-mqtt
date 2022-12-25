@@ -1,10 +1,15 @@
-# rpi-sensehat_mqtt
+# rpi-sensehat-mqtt
 
 ## Introduction
 
 The files here create a service on the _Raspberry Pi_ that works with the SenseHAT from the [astro-pi](https://astro-pi.org/) project and streams its data over MQTT.
 
 This service works on all the Raspberry Pi flavors, as long as they support the SenseHAT.
+
+## Oficial docs
+
+- [RPi SenseHAT](https://www.raspberrypi.com/documentation/accessories/sense-hat.html)
+- [SenseHAT Python Module](https://pythonhosted.org/sense-hat/)
 
 ## Folder structure
 
@@ -39,14 +44,19 @@ The available configuration parameters are:
 
 In order to deploy the configuration, you need to do the following steps
 
-1. Run the file `zip.bat`
-1. Transfer the zip file `rpideploy_*.zip` to the desired target machine
-1. On the target machine, extract the zip file content
-1. run the following command
+1. On the target machine, clone this repository:
 	```
-	<sudo> bash ./setconfiguration.sh
+	git clone https://github.com/cgomesu/rpi-sensehat-mqtt.git
 	```
 
-After this has been successfully executed the new service is already running, and it can be managed using
+2. Run the following command:
+	```
+	cd rpi-sensehat-mqtt/
+	sudo bash ./setconfiguration.sh
+	```
 
-	<sudo> systemctl <command> rpi_sensehat_mqtt.service
+3. After this has been successfully executed the new service is already running, and it can be managed using:
+	```
+	sudo systemctl <command> rpi_sensehat_mqtt.service
+	```
+
