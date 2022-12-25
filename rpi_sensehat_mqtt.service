@@ -1,6 +1,6 @@
 [Unit]
 Description=Script-driven MQTT broadcaster of sensehat data
-Documentation=https://github.com/mirkodcomparetti/rpi-sensehat_mqtt
+Documentation=https://github.com/cgomesu/rpi-sensehat-mqtt
 After=basic.target
 
 [Service]
