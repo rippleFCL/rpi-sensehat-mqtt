@@ -1,5 +1,7 @@
 # This is the log rotation settings for the rpi-sensehat-mqtt logs.
 # See 'https://linux.die.net/man/8/logrotate' for info on how to customize.
+# After editing this file, just copy it to '/etc/logrotate.d/' (or create a symlink there) and your log
+# files should be rotated automatically during the next logrotate run.
 
 # Edit full path to log file if different than default
 /home/pi/rpi-sensehat-mqtt/logs/rpi_sensehat_mqtt.log
