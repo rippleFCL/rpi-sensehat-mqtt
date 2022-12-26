@@ -28,7 +28,7 @@ class Configuration():
     LOG_DATEFMT = '%Y-%m-%dT%H:%M:%S'
     LOG_LEVEL = 'INFO'
 
-    def __init__(self, config_dir = './', config_file = 'CONFIG.ini') -> None:
+    def __init__(self, config_dir = './', config_file = 'CONFIG.ini'):
         self.config_full_path_file = config_dir + config_file
         if not path.isfile(self.config_full_path_file):
             # TODO: log error here
@@ -91,6 +91,11 @@ class Configuration():
             password = self.__raw_config['mqtt'].get('password', None)
             return password
         return None
+
+    @property
+    def mqtt_credentials_enabled(self):
+        # assume that user is None if MQTT does not use credentials
+        return True if self.mqtt_user else False
     
     @property
     def mqtt_channel(self):
