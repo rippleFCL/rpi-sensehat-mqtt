@@ -1,1 +1,2 @@
-paho-mqtt ~= 1.5.1
+sense-hat ~= 2.4
+paho-mqtt ~= 1.6
