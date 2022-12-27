@@ -1,1 +1,1 @@
-from errors import *
+from src.errors.errors import *

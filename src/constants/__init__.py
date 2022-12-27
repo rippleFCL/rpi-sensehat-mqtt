@@ -1,1 +1,1 @@
-from constants import *
+from src.constants.constants import *

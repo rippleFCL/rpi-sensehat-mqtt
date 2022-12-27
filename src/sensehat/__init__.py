@@ -1,1 +1,1 @@
-from sensehat import *
+from src.sensehat.sensehat import *
