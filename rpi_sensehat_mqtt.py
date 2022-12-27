@@ -1,152 +1,94 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# This scripts reads sensors from SenseHAT and streams them on MQTT
 
-from sense_hat import SenseHat
+"""
+This scripts reads sensors from the SenseHAT and publishes them on an MQTT broker.
+Author: @cgomesu
+Repo: https://github.com/cgomesu/rpi-sensehat-mqtt
+"""
+
+# local imports
+import src.constants as const
+# import src.errors as errors
+import src.utils as utils
+import src.mqtt as mqtt
+import src.sensehat as sensehat
+# external imports
 import logging
-import os
-import paho.mqtt.client as mqtt
-import uuid
-import json
-from rfc3986 import urlparse
-import signal
+from signal import signal, SIGINT, SIGHUP, SIGTERM
+import sys
 from threading import Event
-import socket
-import time
 
+# start a loggin instance for this module using constants
+logging.basicConfig(filename=const.LOG_FILENAME, format=const.LOG_FORMAT, datefmt=const.LOG_DATEFMT)
+logger = logging.getLogger(__name__)
+logger.setLevel(const.LOG_LEVEL)
+logger.debug("Initilized a logger object.")
 
-class RpiSenseHatMqtt:
-    """Main app."""
+# initialize global objects
+mqttc = None
+mqtts = None
+sha_sensors = None
+sha_led = None
+sha_joystick = None
+streaming = Event()
+data = None
 
-    def __init__(self):
-        """Init RpiSenseHatMqtt class."""
-        self.logger = logging.getLogger('rpi_sensehat_mqtt.RpiSenseHatMqtt')
-        self.initialized = False
-        topic_prefix = os.environ.get('RPI_SENSEHAT_MQTT_TOPIC_PREFIX', "sensehat")
-        self.topic_prefix = topic_prefix if topic_prefix.endswith("/") else (topic_prefix + "/")
-        self.logger.info("Begin initialize class RpiSenseHatMqtt")
-        self.logger.debug("Capturing signals")
-        signal.signal(signal.SIGINT, self.cleanup)
-        signal.signal(signal.SIGTERM, self.cleanup)
-        self.broker_url = None
-        self.broker_port = None
-        self.broker_user = None
-        if not self._validate_info(
-                os.environ.get('RPI_SENSEHAT_MQTT_BROKER', "mqtt://test.mosquitto.org:1883")
-        ):
-            self.logger.error("Broker information not valid")
-        else:
-            self.logger.info("Initialize MQTT")
-            self.mqtt_client = mqtt.Client(client_id=str(uuid.uuid4()))
-            self.mqtt_client.on_connect = self._on_connect
-            self.mqtt_client.on_message = self._on_message
-            self.mqtt_client.on_publish = self._on_publish
-            self.hostname = socket.gethostname()
-            self.location = os.environ.get('RPI_SENSEHAT_MQTT_LOCATION', "studio")
-            self.measurement = os.environ.get('RPI_SENSEHAT_MQTT_MEASUREMENT', "environment")
+# TODO: adapt logic to match current project structure
+def start(*signals)->None:
+    logger.info("Starting service.")
+    # trap signals from args using stop function as handler
+    for s in signals: signal(s, stop)
 
-            self.logger.info("Initialize SenseHAT")
-            self.sense = SenseHat()
-            self.sense.clear()
-            self.streaming_cycle = int(os.environ.get('RPI_SENSEHAT_MQTT_CYCLE', 60))
-            self.streaming_exit = Event()
+def stop(signum, frame=None)->None:
+    logger.info(f"Received a signal '{signum}' to stop.")
+    # cleanup procedures
+    streaming.set()
+    # disconnect and stop threads
+    if mqttc: mqttc.disable()
+    if mqtts: mqtts.disable()
+    # turn off sensehat led and so on
+    if sha_sensors: sha_sensors.disable()
+    if sha_led: sha_led.disable()
+    if sha_joystick: sha_joystick.disable()
+    # exit the application
+    sys.exit(signum)
 
-            self.initialized = True
-            self.sense.show_message(os.environ.get('RPI_SENSEHAT_MQTT_WELCOME', "Loaded!"))
-            self.sense.low_light = True
-            self.logger.info("Done initialize class RpiSenseHatMqtt")
+def main()->None:
+    # startup procedure passing INT, HUP, TERM signals
+    start(SIGINT, SIGHUP, SIGTERM)
+    # TODO: catch exceptions in object initialization and loop logic
+    # create a config object
+    config = utils.Configuration()
+    # create mqtt client and sensehat objects
+    mqttc = mqtt.MqttClient(broker_address=config.mqtt_broker_address,
+                            client_name=config.mqtt_client_id,
+                            channel=config.mqtt_channel,
+                            zone=config.mqtt_zone,
+                            room=config.mqtt_room,
+                            sensor=config.mqtt_sensor,
+                            user=config.mqtt_user,
+                            password=config.mqtt_password)
+    shat_sensors = sensehat.SenseHatSensor(zone=config.mqtt_zone,
+                                            room=config.mqtt_room,
+                                            sensor=config.mqtt_sensor,
+                                            low_light=config.sensehat_low_light,
+                                            rounding=config.sensehat_rounding,
+                                            acceleration_multiplier=config.sensehat_acceleration_multiplier,
+                                            gyroscope_multiplier=config.sensehat_gyroscope_multiplier)
+    # main loop logic for sensor testing
+    logger.info("Starting main sensor publishing loop.")
+    while not streaming.is_set():
+        logger.debug("Updating and publishing sensor data.")
+        mqttc.publish(shat_sensors.sensors_data())
+        logger.debug(f"Waiting for signal or timeout ({config.resolution}).")
+        streaming.wait(config.resolution)
+        if not streaming.is_set():
+            logger.debug(f"Reached wait timeout.")
+    # if it escapes loop, stop the application with code 0
+    logger.info("Streaming Event was set to True.")
+    stop(0)
 
-    def cleanup(self, signum, frame):
-        self.logger.info("Cleanup")
-        self.streaming_exit.set()
-        if not self.initialized:
-            return None
-        if self.mqtt_client.is_connected():
-            self.mqtt_client.disconnect()
-            self.mqtt_client.loop_stop()
-
-    def _validate_info(self, broker_info):
-        self.logger.debug("Validating " + broker_info)
-        parseduri = urlparse(broker_info)
-        if not (parseduri.scheme in ["mqtt", "ws"]):
-            return False
-        self.broker_url = parseduri.host
-        self.broker_port = parseduri.port
-        self.broker_user = parseduri.userinfo
-        self.logger.debug("broker_user {}".format(self.broker_user))
-        self.logger.debug("broker_url {}, broker_port: {}".format(self.broker_url, self.broker_port))
-        if not (self.broker_url and self.broker_port):
-            return False
-        return True
-
-    def _on_connect(self, client, userdata, flags, rc):
-        self.logger.info("Connected with result code " + str(rc))
-        self.mqtt_client.subscribe(self.topic_prefix + "commands")
-
-    def _on_message(self, client, userdata, msg):
-        self.logger.debug(msg.topic + " " + str(msg.payload))
-        if msg.topic in [self.topic_prefix + "commands"]:
-            command = json.loads(msg.payload)
-            if 'ledwall' in command.keys():
-                self.logger.debug("Writing message on the LedWall: {}".format(command["ledwall"]))
-                self.sense.show_message(command["ledwall"])
-
-    def _on_publish(self, client, userdata, result):
-        pass
-
-    def connect(self):
-        if self.initialized and self.broker_url and self.broker_port:
-            self.logger.debug("{}:{}".format(self.broker_url, self.broker_port))
-            self.mqtt_client.connect(self.broker_url, self.broker_port, 30)
-
-    def _stream_sensors(self):
-        while not self.streaming_exit.is_set():
-            js_on_message = self._read_sensors()
-            js_on_message["measurement"] = self.measurement
-            js_on_message["source"] = self.hostname
-            js_on_message["location"] = self.location
-            js_on_message = json.dumps(js_on_message)
-            self.logger.debug("js_on_message {}".format(js_on_message))
-            self.mqtt_client.publish(self.topic_prefix + "readings", payload=js_on_message, qos=0, retain=False)
-            self.streaming_exit.wait(self.streaming_cycle)
-
-    def _read_sensors(self):
-        sensor_reading = {
-            "time": int(round(time.time() * 1000)),
-            "pressure": round(self.sense.get_pressure(), 3),
-            "temperature": {
-                "01": round(self.sense.get_temperature(), 3),
-                "02": round(self.sense.get_temperature_from_pressure(), 3),
-            },
-            "humidity": round(self.sense.get_humidity(), 3),
-            "acceleration": {
-                "x": round(self.sense.get_accelerometer_raw().get("x") * 9.80665, 3),
-                "y": round(self.sense.get_accelerometer_raw().get("y") * 9.80665, 3),
-                "z": round(self.sense.get_accelerometer_raw().get("z") * 9.80665, 3),
-            }
-        }
-        return sensor_reading
-
-    def start(self):
-        if not self.initialized:
-            return None
-        self.mqtt_client.loop_start()
-        self._stream_sensors()
-
-
-logging.basicConfig(
-    filename='/var/log/rpi_broadcaster/rpi_sensehat_mqtt.log',
-    format='%(asctime)s.%(msecs)03d %(levelname)s\t[%(name)s] %(message)s',
-    datefmt='%Y-%m-%dT%H:%M:%S'
-)
-logger = logging.getLogger("rpi_sensehat_mqtt")
-logger.setLevel(os.environ.get('RPI_SENSEHAT_MQTT_LOGLEVEL', logging.DEBUG))
 
 if __name__ == "__main__":
-    # Start RpiSenseHatMqtt app
-    logger.info("Starting RpiSenseHatMqtt service")
-    root = RpiSenseHatMqtt()
-    root.connect()
-    logger.info("Run main loop - wait for stop signal")
-    root.start()
-    logger.info("Stopping main loop")
+    main()
