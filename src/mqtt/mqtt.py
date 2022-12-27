@@ -4,7 +4,6 @@ This module is meant to be use in conjunction with the paho-mqtt package.
 """
 # local imports
 from src.constants import constants as const
-
 # external imports
 import logging
 from paho.mqtt import client as mqttc
@@ -12,7 +11,11 @@ from paho.mqtt import client as mqttc
 from urllib.parse import urlparse
 import json
 
-#  start a loggin instance if this is being called indirectly
+# start a loggin instance for this module using constants
+logging.basicConfig(filename=const.LOG_FILENAME, format=const.LOG_FORMAT, datefmt=const.LOG_DATEFMT)
+logger = logging.getLogger(__name__)
+logger.setLevel(const.LOG_LEVEL)
+logger.debug("Initilized a logger object.")
 
 class MqttSubscribe():
     """
@@ -54,7 +57,7 @@ class MqttClient():
         # MQTT client object has been fully initialized
         self.topic = str(self.zone)+'/'+str(self.room)+'/'+str(self.sensor)
         self.is_initialized = True
-        # TODO: log mqtt client object initialized
+        logger.info(f"An MQTT cliente for the broker '{self.broker_url}' was initialized.")
 
     def __connect(self):
         # protocol conditional
@@ -79,70 +82,40 @@ class MqttClient():
         if rc == 0:
             # MQTT connected
             self.is_connected = True
-            # TODO: log connection
+            logger.info(f"The client '{client}' connected successfully to '{self.broker_url}'.")
         else:
             # Connection error
-            # TODO: log connection error with code {rc}
-            pass
+            logger.info(f"The client '{client}' got an error ({rc}) trying to connect to '{self.broker_url}'.")
 
     def __on_disconnect(self, client, userdata, rc):
         if rc != 0:
             # MQTT disconnected
             self.is_connected = False
-            # TODO: log disconnection
+            logger.info(f"The client '{client}' was disconnected from '{self.broker_url}'.")
 
     def __on_publish(self, client, userdata, mid):
         self.published_mid = mid
-        # TODO: log that the message of 'mid' was successfully sent to the broker
+        logger.info(f"The message of ID '{mid}' was successfully sent to '{self.broker_url}'.")
 
     def __on_log(client, userdata, level, buff):
-        # TODO: log 'buff' to the logger to store exceptions catch by the client
-        pass
+        # TODO: set level according to level arg because this might be too verbose
+        logger.info(f"[paho-mqtt] {buff}")
 
     def publish(self, data:dict):
         """
         Publish data in dict format to the MQTT broker.
         """
-        # TODO: validate data. for now, assume data follow excepted structure
-        """
-        data = {
-            zone : {
-                room : {
-                    sensor : {
-                        "time": int(round(time.time() * 1000)),
-                        "pressure": round(self.sense.get_pressure(), 3),
-                        "temperature": {
-                            "01": round(self.sense.get_temperature(), 3),
-                            "02": round(self.sense.get_temperature_from_pressure(), 3),
-                        },
-                        "humidity": round(self.sense.get_humidity(), 3),
-                        "gyroscope": {
-                            "pitch": '?',
-                            "roll": '?',
-                            "yaw": '?',
-                        },
-                        "compass":
-                            "north": '?',
-                        "acceleration": {
-                            "x": round(self.sense.get_accelerometer_raw().get("x") * 9.80665, 3),
-                            "y": round(self.sense.get_accelerometer_raw().get("y") * 9.80665, 3),
-                            "z": round(self.sense.get_accelerometer_raw().get("z") * 9.80665, 3),
-                        }
-                    },
-                },
-            },
-        }
-        """
+        # TODO: validate data
         json_data = json.dumps(data)
-        self.__client.publish(topic=self._topic, payload=json_data, qos=0, retain=True)
-        # TODO: log attempt to publish a message
+        self.__client.publish(topic=self.topic, payload=json_data, qos=0, retain=True)
+        logger.info(f"A publish request to topic '{self.topic}' was made.")
     
     def disable(self):
         """
         Method that disables the client in this class object.
         To be used in exit, interrupts, and cleanup procedures.
         """
-        # TODO: log call to disable this client
+        logger.info(f"Received a call to disable the client '{self.client_name}'.")
         # disconnect and stop object's client
         if self.is_initialized:
             self.__client.disconnect()

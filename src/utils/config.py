@@ -2,9 +2,19 @@
 Module that parses an initialization (INI) config file
 """
 
+# local imports
+from src.constants import constants as const
+# external imports
+import logging
 from os import path
 from random import randint
 from configparser import ConfigParser, Error
+
+# start a loggin instance for this module using constants
+logging.basicConfig(filename=const.LOG_FILENAME, format=const.LOG_FORMAT, datefmt=const.LOG_DATEFMT)
+logger = logging.getLogger(__name__)
+logger.setLevel(const.LOG_LEVEL)
+logger.debug("Initilized a logger object.")
 
 class Configuration():
     """
@@ -29,7 +39,7 @@ class Configuration():
 
     def __init__(self, config_dir = './', config_file = 'CONFIG.ini'):
         if not path.isfile(config_dir + config_file):
-            # TODO: log error here
+            logger.info(f"The file '{config_dir + config_file}' does not exist.")
             raise OSError(filename=self.config_full_path_file)
         self.config_full_path_file = config_dir + config_file
         # init raw config with None and then set keys and values from INI file via load method
@@ -52,17 +62,16 @@ class Configuration():
         self.__sensehat_acceleration_multiplier = Configuration.SENSEHAT_ACCELERATION_MULTIPLIER
         self.__sensehat_gyroscope_multiplier = Configuration.SENSEHAT_GYROSCOPE_MULTIPLIER
         self.__load_config_attributes()
-        # TODO: log config object fully initialized
+        logger.info(f"A config object for the INI file '{self.config_full_path_file}' was initialized.")
 
     def __load_raw_config(self):
         config_parser = ConfigParser()
         try:
-            config_parser.read(self.configPath)
+            config_parser.read(self.config_full_path_file)
             self.__raw_config = config_parser
         except Error as err:
-            # TODO: log err here
+            logger.info(f"Unable to parse the INI file '{self.config_full_path_file}'. Error: '{err}'")
             # TODO: raise a custom error for main app to catch passing err
-            pass
 
     def __load_config_attributes(self):
         # DEFAULT

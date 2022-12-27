@@ -2,8 +2,18 @@
 Module to interface with the SenseHAT API
 """
 
+# local imports
+from src.constants import constants as const
+# external imports
+import logging
 from sense_hat import SenseHat
 import time
+
+# start a loggin instance for this module using constants
+logging.basicConfig(filename=const.LOG_FILENAME, format=const.LOG_FORMAT, datefmt=const.LOG_DATEFMT)
+logger = logging.getLogger(__name__)
+logger.setLevel(const.LOG_LEVEL)
+logger.debug("Initilized a logger object.")
 
 class SenseHatJoystick():
     pass
@@ -33,7 +43,6 @@ class SenseHatSensor():
     ACCELERATION_02 = 'y'
     ACCELERATION_03 = 'z'
 
-    # TODO: add new config variables to attr
     def __init__(self,
                 zone:str,
                 room:str,
@@ -61,7 +70,7 @@ class SenseHatSensor():
         self.__sense = SenseHat()
         # read initial sensor values
         self.data = self.sensors_data()
-        # TODO: log sensehat object initialized
+        logger.info(f"A sensehat object for sensor '{self.sensor}' was initialized.")
     
     def sensors_data(self) -> dict:
         """
@@ -123,6 +132,7 @@ class SenseHatSensor():
                 }
             }
         }
-        # TODO: log sensor read call
+        logger.info(f"A call to read and assign updated sensor data was made.")
+        logger.debug(f"Data: '{data}'")
         return data
 
