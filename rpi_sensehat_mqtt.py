@@ -28,13 +28,12 @@ logger.debug("Initilized a logger object.")
 # initialize global objects
 mqttc = None
 mqtts = None
-sha_sensors = None
-sha_led = None
-sha_joystick = None
+shat_sensors = None
+shat_led = None
+shat_joystick = None
 streaming = Event()
 data = None
 
-# TODO: adapt logic to match current project structure
 def start(*signals)->None:
     logger.info("Starting service.")
     # trap signals from args using stop function as handler
@@ -48,9 +47,9 @@ def stop(signum, frame=None)->None:
     if mqttc: mqttc.disable()
     if mqtts: mqtts.disable()
     # turn off sensehat led and so on
-    if sha_sensors: sha_sensors.disable()
-    if sha_led: sha_led.disable()
-    if sha_joystick: sha_joystick.disable()
+    if shat_sensors: shat_sensors.disable()
+    if shat_led: shat_led.disable()
+    if shat_joystick: shat_joystick.disable()
     # exit the application
     sys.exit(signum)
 
