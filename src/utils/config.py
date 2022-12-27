@@ -21,12 +21,6 @@ class Configuration():
     MQTT_ZONE = "downstairs"
     MQTT_ROOM = "living-room"
     MQTT_SENSOR = "sensehat"
-    # LOG
-    LOG_DIR = './logs/'
-    LOG_FILE = 'rpi_sensehat_mqtt.log'
-    LOG_FORMAT = '%(asctime)s.%(msecs)03d %(levelname)s\t[%(name)s] %(message)s'
-    LOG_DATEFMT = '%Y-%m-%dT%H:%M:%S'
-    LOG_LEVEL = 'INFO'
     # SENSEHAT
     SENSEHAT_LOW_LIGHT = True
     SENSEHAT_ROUNDING = 4
@@ -53,10 +47,6 @@ class Configuration():
         self.__mqtt_zone = Configuration.MQTT_ZONE
         self.__mqtt_room = Configuration.MQTT_ROOM
         self.__mqtt_sensor = Configuration.MQTT_SENSOR
-        self.__log_filename = Configuration.LOG_DIR+Configuration.LOG_FILE
-        self.__log_format = Configuration.LOG_FORMAT
-        self.__log_datefmt = Configuration.LOG_DATEFMT
-        self.__log_level = Configuration.LOG_LEVEL
         self.__sensehat_low_light = Configuration.SENSEHAT_LOW_LIGHT
         self.__sensehat_rounding = Configuration.SENSEHAT_ROUNDING
         self.__sensehat_acceleration_multiplier = Configuration.SENSEHAT_ACCELERATION_MULTIPLIER
@@ -112,36 +102,20 @@ class Configuration():
         # mqtt_sensor
         if 'mqtt' in self.__raw_config.sections():
             self.__mqtt_sensor = self.__raw_config['mqtt'].get('sensor', Configuration.MQTT_SENSOR)
-        # log_filename
-        if 'log' in self.__raw_config.sections():
-            log_filename = \
-                self.__raw_config['log'].get('dir', Configuration.LOG_DIR) \
-                + self.__raw_config['log'].get('dir', Configuration.LOG_FILE)
-            self.__log_filename = log_filename if path.isfilename(log_filename) else \
-                Configuration.LOG_DIR+Configuration.LOG_FILE
-        # log_format
-        if 'log' in self.__raw_config.sections():
-            self.__log_format = self.__raw_config['log'].get('format', Configuration.LOG_FORMAT)
-        # log_datefmt
-        if 'log' in self.__raw_config.sections():
-            self.__log_datefmt = self.__raw_config['log'].get('datefmt', Configuration.LOG_DATEFMT)
-        # log_level
-        if 'log' in self.__raw_config.sections():
-            self.__log_level = self.__raw_config['log'].get('level', Configuration.LOG_LEVEL)
         # SENSEHAT
         # sensehat_low_light
         if 'sensehat' in self.__raw_config.sections():
-            self.__sensehat_low_light = self.__raw_config['sensehat'].getboolean('low_lebel', Configuration.LOG_LEVEL)
+            self.__sensehat_low_light = self.__raw_config['sensehat'].getboolean('low_light', Configuration.SENSEHAT_LOW_LIGHT)
         # sensehat_rounding
         if 'sensehat' in self.__raw_config.sections():
-            self.__sensehat_rounding = self.__raw_config['sensehat'].getint('sensehat_rounding', Configuration.SENSEHAT_ROUNDING)
+            self.__sensehat_rounding = self.__raw_config['sensehat'].getint('rounding', Configuration.SENSEHAT_ROUNDING)
         # sensehat_acceleration_multiplier
         if 'sensehat' in self.__raw_config.sections():
-            self.__sensehat_acceleration_multiplier= self.__raw_config['sensehat'].getfloat('sensehat_acceleration_multiplier',
+            self.__sensehat_acceleration_multiplier= self.__raw_config['sensehat'].getfloat('acceleration_multiplier',
                 Configuration.SENSEHAT_ACCELERATION_MULTIPLIER)
         # sensehat_gyroscope_multiplier
         if 'sensehat' in self.__raw_config.sections():
-            self.__sensehat_gyroscope_multiplier = self.__raw_config['sensehat'].getfloat('sensehat_gyroscope_multiplier',
+            self.__sensehat_gyroscope_multiplier = self.__raw_config['sensehat'].getfloat('gyroscope_multiplier',
                 Configuration.SENSEHAT_GYROSCOPE_MULTIPLIER)
 
     # TODO: Validation could happen in setter logic
@@ -189,22 +163,6 @@ class Configuration():
     def mqtt_sensor(self):
         return self.__mqtt_sensor
 
-    @property
-    def log_filename(self):
-        return self.__log_filename
-
-    @property
-    def log_format(self):
-        return self.__log_format
-
-    @property
-    def log_datefmt(self):
-        return self.__log_datefmt
-
-    @property
-    def log_level(self):
-        return self.__log_level
-    
     @property
     def sensehat_low_light(self):
         return self.__sensehat_low_light

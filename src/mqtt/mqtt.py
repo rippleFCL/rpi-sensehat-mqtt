@@ -2,11 +2,17 @@
 Module that contains application-specific MQTT functions.
 This module is meant to be use in conjunction with the paho-mqtt package.
 """
+# local imports
+from src.constants import constants as const
 
+# external imports
+import logging
 from paho.mqtt import client as mqttc
 # from paho.mqtt import subscribe as mqtts
 from urllib.parse import urlparse
 import json
+
+#  start a loggin instance if this is being called indirectly
 
 class MqttSubscribe():
     """
