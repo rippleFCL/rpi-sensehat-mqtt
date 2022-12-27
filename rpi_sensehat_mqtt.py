@@ -61,7 +61,7 @@ def main()->None:
     config = utils.Configuration()
     # create mqtt client and sensehat objects
     mqttc = mqtt.MqttClient(broker_address=config.mqtt_broker_address,
-                            client_name=config.mqtt_client_id,
+                            client_id=config.mqtt_client_id,
                             channel=config.mqtt_channel,
                             zone=config.mqtt_zone,
                             room=config.mqtt_room,
