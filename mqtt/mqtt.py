@@ -20,14 +20,14 @@ class MqttClient():
     Doc: https://www.eclipse.org/paho/index.php?page=clients/python/docs/index.php
     """
     def __init__(self,
-                broker_address,
-                client_name,
-                channel,
-                zone,
-                room,
-                sensor,
-                user=None,
-                password=None):
+                broker_address:str,
+                client_name:str,
+                channel:str,
+                zone:str,
+                room:str,
+                sensor:str,
+                user:str = None,
+                password:str = None):
         # TODO: Handle exceptions from urlparse()
         self.broker_url = urlparse(broker_address)
         self.client_name = client_name
