@@ -49,7 +49,7 @@ class Configuration():
         self.__resolution = Configuration.RESOLUTION
         self.__welcome_msg = None
         self.__mqtt_broker_address = Configuration.MQTT_BROKER_ADDRESS
-        self.__mqtt_client_id = Configuration.MQTT_CL+str(randint(0,99))
+        self.__mqtt_client_id = Configuration.MQTT_CLIENT_ID+str(randint(0,99))
         self.__mqtt_user = None
         self.__mqtt_password = None
         self.__mqtt_credentials_enabled = False
