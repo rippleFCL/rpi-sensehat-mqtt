@@ -30,7 +30,7 @@ class MqttClient():
     """
     def __init__(self,
                 broker_address:str,
-                client_name:str,
+                client_id:str,
                 channel:str,
                 zone:str,
                 room:str,
@@ -39,7 +39,7 @@ class MqttClient():
                 password:str = None):
         # TODO: Handle exceptions from urlparse()
         self.broker_url = urlparse(broker_address)
-        self.client_name = client_name
+        self.client_id = client_id
         self.channel = channel
         self.zone = zone
         self.room = room
@@ -62,9 +62,9 @@ class MqttClient():
     def __connect(self):
         # protocol conditional
         if self.broker_url.scheme == 'ws':
-            self.__client = mqttc.Client(client_id=self.client_name, transport='websockets')
+            self.__client = mqttc.Client(client_id=self.client_id, transport='websockets')
         else:
-            self.__client = mqttc.Client(client_id=self.client_name)
+            self.__client = mqttc.Client(client_id=self.client_id)
         # custom mqtt functions references
         self.__client.on_connect = self.__on_connect
         self.__client.on_disconnect = self.__on_disconnect
@@ -115,7 +115,7 @@ class MqttClient():
         Method that disables the client in this class object.
         To be used in exit, interrupts, and cleanup procedures.
         """
-        logger.info(f"Received a call to disable the client '{self.client_name}'.")
+        logger.info(f"Received a call to disable the client '{self.client_id}'.")
         # disconnect and stop object's client
         if self.is_initialized:
             self.__client.disconnect()
