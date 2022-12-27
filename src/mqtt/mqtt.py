@@ -57,7 +57,7 @@ class MqttClient():
         # MQTT client object has been fully initialized
         self.topic = str(self.zone)+'/'+str(self.room)+'/'+str(self.sensor)
         self.is_initialized = True
-        logger.info(f"An MQTT cliente for the broker '{self.broker_url}' was initialized.")
+        logger.info(f"An MQTT client for the broker '{self.broker_url.hostname}' was initialized.")
 
     def __connect(self):
         # protocol conditional
@@ -82,20 +82,20 @@ class MqttClient():
         if rc == 0:
             # MQTT connected
             self.is_connected = True
-            logger.info(f"The client '{client}' connected successfully to '{self.broker_url}'.")
+            logger.info(f"The client '{client}' connected successfully to '{self.broker_url.hostname}'.")
         else:
             # Connection error
-            logger.info(f"The client '{client}' got an error ({rc}) trying to connect to '{self.broker_url}'.")
+            logger.info(f"The client '{client}' got an error ({rc}) trying to connect to '{self.broker_url.hostname}'.")
 
     def __on_disconnect(self, client, userdata, rc):
         if rc != 0:
             # MQTT disconnected
             self.is_connected = False
-            logger.info(f"The client '{client}' was disconnected from '{self.broker_url}'.")
+            logger.info(f"The client '{client}' was disconnected from '{self.broker_url.hostname}'.")
 
     def __on_publish(self, client, userdata, mid):
         self.published_mid = mid
-        logger.info(f"The message of ID '{mid}' was successfully sent to '{self.broker_url}'.")
+        logger.info(f"The message of ID '{mid}' was successfully sent to '{self.broker_url.hostname}'.")
 
     def __on_log(client, userdata, level, buff):
         # TODO: set level according to level arg because this might be too verbose

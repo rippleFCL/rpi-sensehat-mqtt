@@ -80,29 +80,29 @@ class SenseHatSensor():
         # https://docs.python.org/3/library/time.html#time.asctime
         self.__time = time.asctime()
         # https://pythonhosted.org/sense-hat/api/
-        self.__pressure = round(self.__sense.get_pressure(), SenseHatSensor.ROUNDING)
-        self.__temperature_01 = round(self.__sense.get_temperature(), SenseHatSensor.ROUNDING)
-        self.__temperature_02 = round(self.__sense.get_temperature_from_pressure(), SenseHatSensor.ROUNDING)
-        self.__humidity = round(self.__sense.get_humidity(), SenseHatSensor.ROUNDING)
+        self.__pressure = round(self.__sense.get_pressure(), self.rounding)
+        self.__temperature_01 = round(self.__sense.get_temperature(), self.rounding)
+        self.__temperature_02 = round(self.__sense.get_temperature_from_pressure(), self.rounding)
+        self.__humidity = round(self.__sense.get_humidity(), self.rounding)
         self.__gyroscope_01 = round(
-            self.__sense.get_gyroscope_raw().get("x") * SenseHatSensor.GYROSCOPE_MULTIPLIER,
-            SenseHatSensor.ROUNDING)
+            self.__sense.get_gyroscope_raw().get("x") * self.gyroscope_multiplier,
+            self.rounding)
         self.__gyroscope_02 = round(
-            self.__sense.get_gyroscope_raw().get("y") * SenseHatSensor.GYROSCOPE_MULTIPLIER,
-            SenseHatSensor.ROUNDING)
+            self.__sense.get_gyroscope_raw().get("y") * self.gyroscope_multiplier,
+            self.rounding)
         self.__gyroscope_03 = round(
-            self.__sense.get_gyroscope_raw().get("z") * SenseHatSensor.GYROSCOPE_MULTIPLIER,
-            SenseHatSensor.ROUNDING)
-        self.__compass_north = round(self.__sense.get_compass(), SenseHatSensor.ROUNDING)
+            self.__sense.get_gyroscope_raw().get("z") * self.gyroscope_multiplier,
+            self.rounding)
+        self.__compass_north = round(self.__sense.get_compass(), self.rounding)
         self.__acceleration_01 = round(
-            self.__sense.get_accelerometer_raw().get("x") * SenseHatSensor.ACCELERATION_MULTIPLIER,
-            SenseHatSensor.ROUNDING)
+            self.__sense.get_accelerometer_raw().get("x") * self.acceleration_multiplier,
+            self.rounding)
         self.__acceleration_02 = round(
-            self.__sense.get_accelerometer_raw().get("y") * SenseHatSensor.ACCELERATION_MULTIPLIER,
-            SenseHatSensor.ROUNDING)
+            self.__sense.get_accelerometer_raw().get("y") * self.acceleration_multiplier,
+            self.rounding)
         self.__acceleration_03 = round(
-            self.__sense.get_accelerometer_raw().get("z") * SenseHatSensor.ACCELERATION_MULTIPLIER,
-            SenseHatSensor.ROUNDING)
+            self.__sense.get_accelerometer_raw().get("z") * self.acceleration_multiplier,
+            self.rounding)
         # generate and update data structure
         data = {
             self.zone : {
