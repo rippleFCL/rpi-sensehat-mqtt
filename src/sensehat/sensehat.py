@@ -136,3 +136,10 @@ class SenseHatSensor():
         logger.debug(f"Data: '{data}'")
         return data
 
+    def disable(self):
+        """
+        If appropriate, this method should be called during cleanup procedures.
+        For example, to turn off the LED matrix.
+        """
+        pass
+
