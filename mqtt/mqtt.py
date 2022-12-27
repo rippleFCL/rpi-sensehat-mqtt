@@ -37,16 +37,17 @@ class MqttClient():
         self.sensor = sensor
         self.user = user
         self.password = password
-        # observe scope from this point on
+        # don't make the client public
         self.__client = None
         # class object helpers
-        self._is_initialized = False
-        self._is_connected = False
-        self._published_mid = None
+        self.is_initialized = False
+        self.is_connected = False
+        self.published_mid = None
         # initialize connection
         self.__connect()
-        # connection has been initialized
-        self._is_initialized = True
+        # MQTT client object has been fully initialized
+        self.topic = str(self.zone)+'/'+str(self.room)+'/'+str(self.sensor)
+        self.is_initialized = True
         # TODO: log mqtt client object initialized
 
     def __connect(self):
@@ -59,6 +60,7 @@ class MqttClient():
         self.__client.on_connect = self.__on_connect
         self.__client.on_disconnect = self.__on_disconnect
         self.__client.on_publish = self.__on_publish
+        self.__client.on_log = self.__on_log
         # TODO: TLS support
         # credentials handling
         if self.user:
@@ -70,7 +72,7 @@ class MqttClient():
     def __on_connect(self, client, userdata, flags, rc):
         if rc == 0:
             # MQTT connected
-            self._is_connected = True
+            self.is_connected = True
             # TODO: log connection
         else:
             # Connection error
@@ -80,29 +82,62 @@ class MqttClient():
     def __on_disconnect(self, client, userdata, rc):
         if rc != 0:
             # MQTT disconnected
-            self._is_connected = False
+            self.is_connected = False
             # TODO: log disconnection
 
     def __on_publish(self, client, userdata, mid):
-        self._published_mid = mid
+        self.published_mid = mid
         # TODO: log that the message of 'mid' was successfully sent to the broker
+
+    def __on_log(client, userdata, level, buff):
+        # TODO: log 'buff' to the logger to store exceptions catch by the client
+        pass
 
     def publish(self, data:dict):
         """
         Publish data in dict format to the MQTT broker.
         """
-        # TODO: validate data
+        # TODO: validate data. for now, assume data follow excepted structure
         """
-        raw_mqtt_data = {
+        data = {
             zone : {
                 room : {
                     sensor : {
-                        "temperature" : temperature,
-                        "humidity" : humidity,
-                        "pressure" : pressure
+                        "time": int(round(time.time() * 1000)),
+                        "pressure": round(self.sense.get_pressure(), 3),
+                        "temperature": {
+                            "01": round(self.sense.get_temperature(), 3),
+                            "02": round(self.sense.get_temperature_from_pressure(), 3),
+                        },
+                        "humidity": round(self.sense.get_humidity(), 3),
+                        "gyroscope": {
+                            "pitch": '?',
+                            "roll": '?',
+                            "yaw": '?',
+                        },
+                        "compass":
+                            "north": '?',
+                        "acceleration": {
+                            "x": round(self.sense.get_accelerometer_raw().get("x") * 9.80665, 3),
+                            "y": round(self.sense.get_accelerometer_raw().get("y") * 9.80665, 3),
+                            "z": round(self.sense.get_accelerometer_raw().get("z") * 9.80665, 3),
+                        }
                     },
                 },
             },
         }
         """
-        pass
+        json_data = json.dumps(data)
+        self.__client.publish(topic=self._topic, payload=json_data, qos=0, retain=True)
+        # TODO: log attempt to publish a message
+    
+    def disable(self):
+        """
+        Method that disables the client in this class object.
+        To be used in exit, interrupts, and cleanup procedures.
+        """
+        # TODO: log call to disable this client
+        # disconnect and stop object's client
+        if self.is_initialized:
+            self.__client.disconnect()
+            self.__client.loop_stop()
