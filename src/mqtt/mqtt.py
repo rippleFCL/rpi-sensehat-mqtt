@@ -143,13 +143,12 @@ class MqttClient(ABC):
             logger.info(f"The client/type '{self.client_id}/{self.type}' was disconnected from '{self.broker_url.hostname}'.")
 
     def on_log(client, userdata, level, buff):
-        # TODO: set level according to level arg because this might be too verbose?
-        logger.info(f"[paho.mqtt.client] {buff}")
+        logger.debug(f"[paho.mqtt.client] {buff}")
 
     def on_publish(self, client, userdata, mid):
         # only for logging purposes
         self.published_mid = mid
-        logger.info(f"The msgID '{mid}' by '{self.client_id}/{self.type}' was successfully sent to '{self.broker_url.hostname}'.")
+        logger.debug(f"The msgID '{mid}' by '{self.client_id}/{self.type}' was successfully sent to '{self.broker_url.hostname}'.")
 
     def on_message(self, client, userdata, message):
         # clients that parse messages should message.get() them if not messages.empty()
