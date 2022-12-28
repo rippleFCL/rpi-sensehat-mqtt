@@ -6,18 +6,14 @@ After=network-online.target
 
 [Service]
 Type=simple
-
 # User must match folder permission and user with the required Python packages
 User=pi
-# Group=GROUP
-
+#Group=GROUP
 # Edit the full path to the Python script if different than default
 ExecStart=/usr/bin/python3 /home/pi/rpi-sensehat-mqtt/rpi_sensehat_mqtt.py
-
 # Restart options
 Restart=always
 RestartSec=15
-
 # Tell how systemd should kill this process
 KillMode=process
 KillSignal=SIGINT
