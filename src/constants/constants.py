@@ -1,9 +1,7 @@
 """
-Module that stores constant variables to be used by MULTIPLE packages/modules in the application.
-The constants here are usually arguments for external packages that are imported by multiple modules.
-They are not meant to be edited by users in most cases.
-
-For module specific constants (e.g., class defaults), set and refer to the module itself.
+Module that stores constant variables to be used by multiple packages/modules in the application
+or that should be edited for development or advanced usage. For module specific constants, it's
+preferable set them in module itself and refer to it instead.
 """
 
 # LOGGING
@@ -16,3 +14,7 @@ LOG_FILENAME = LOG_DIR+LOG_FILE
 LOG_FORMAT = '%(asctime)s.%(msecs)03d [%(levelname)s] [%(name)s] %(message)s'
 LOG_DATEFMT = '%Y-%m-%dT%H:%M:%S'
 LOG_LEVEL = 'DEBUG'
+
+# SENSEHAT
+# set to True to use sense_emu instead of sense_hat, then use sense_emu_gui to interface with a virtual 
+SENSEHAT_EMULATION = False

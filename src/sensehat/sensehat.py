@@ -1,14 +1,24 @@
 """
 Module to interface with the SenseHAT API
+
+Related doc: https://pythonhosted.org/sense-hat/api/
 """
 
 # local imports
 from src.constants import constants as const
+# emulation settings
+if const.SENSEHAT_EMULATION:
+    from sense_emu import SenseHat as Sense
+    from sense_emu import ACTION_PRESSED, ACTION_HELD, ACTION_RELEASED
+else:
+    from sense_hat import SenseHat as Sense
+    from sense_hat import ACTION_PRESSED, ACTION_HELD, ACTION_RELEASED
 # external imports
 import logging
+from time import asctime
 from abc import ABC, abstractmethod
-from sense_hat import SenseHat as Sense
-import time
+from signal import pause
+from queue import Queue
 
 # start a loggin instance for this module using constants
 logging.basicConfig(filename=const.LOG_FILENAME, format=const.LOG_FORMAT, datefmt=const.LOG_DATEFMT)
@@ -22,7 +32,15 @@ class SenseHat(ABC):
     Add any arg or method that should be common to subclasses here.
     """
     def __init__(self):
-        pass
+        # create a private SenseHat object to interact with the sensors API
+        self._sense = Sense()
+    
+    @property
+    def sense(self):
+        return self._sense
+    @sense.setter
+    def sense(self, sense:Sense):
+        self._sense = sense
 
     @abstractmethod
     def disable(self):
@@ -31,11 +49,98 @@ class SenseHat(ABC):
         """
         pass
 
-class SenseHatJoystick():
-    pass
+class SenseHatJoystick(SenseHat):
+    """
+    Generates a SenseHAT Joystick object.
+    """
+    # valid class directions
+    LEFT = 'left'
+    RIGHT = 'right'
+    UP = 'up'
+    DOWN = 'down'
 
-class SenseHatLed():
-    pass
+    def __init__(self):
+        super().__init__()
+        # queue for directions made by the joystick
+        self.directions = Queue()
+    
+    @property
+    def directions(self):
+        return self.directions
+    @directions.setter
+    def directions(self, dir:str):
+        self.directions = dir
+
+    def disable(self):
+        # Nothing to do because does not change states of physical components
+        pass
+
+    # class specific methods
+    def wait_directions(self):
+        def __pushed_up(event):
+            if event.action != ACTION_RELEASED:
+                self.directions = SenseHatJoystick.UP
+
+        def __pushed_down(event):
+            if event.action != ACTION_RELEASED:
+                self.directions = SenseHatJoystick.DOWN
+
+        def __pushed_left(event):
+            if event.action != ACTION_RELEASED:
+                self.directions = SenseHatJoystick.LEFT
+
+        def __pushed_right(event):
+            if event.action != ACTION_RELEASED:
+                self.directions = SenseHatJoystick.RIGHT
+
+        # run these local functions whenever the stick is moved
+        self.sense.stick.direction_up = __pushed_up
+        self.sense.stick.direction_down = __pushed_down
+        self.sense.stick.direction_left = __pushed_left
+        self.sense.stick.direction_right = __pushed_right
+
+        logger.info(f"The client/type '{self.client_id}/{self.type}' is waiting for stick directions.")
+        # wait for signal to stop
+        pause()
+
+class SenseHatLed(SenseHat):
+    """
+    Generates a SenseHAT LED object.
+    An object of this class has a 'sense' attribute that allows interacting with the SenseHat API directly.
+    This is convenient because the SenseHAT API already has many methods for the LED matrix.
+    For more info, see https://pythonhosted.org/sense-hat/api/#led-matrix.
+    """
+    def __init__(self,
+                low_light:bool=True):
+        super().__init__()
+        # LED variables
+        self._low_light = low_light
+        # clear LED and init pixels list attribute
+        self.sense.clear()
+        # List containing 64 smaller lists of [R, G, B] pixels (red, green, blue)
+        # representing the 8x8 LED matrix.
+        self._pixels = self.sense.get_pixels
+        logger.info(f"A sensehat object for its LED matrix was initialized.")
+
+    @property
+    def low_light(self):
+        return self._low_light
+    @low_light.setter
+    def low_light(self, state:bool):
+        self._low_light = state
+        self.sense.low_light = self.low_light
+
+    @property
+    def pixels(self):
+        return self._pixels
+    @pixels.setter
+    def pixels(self, pixels:list):
+        # TODO: validade
+        self._pixels = pixels
+
+    def disable(self):
+        # Must clear the LED before disabling object
+        self.sense.clear()
 
 class SenseHatSensor(SenseHat):
     """
@@ -49,7 +154,7 @@ class SenseHatSensor(SenseHat):
     TEMPERATURE_02 = 'from_pressure'
     HUMIDITY = 'humidity'
     GYROSCOPE = 'gyroscope'
-    GYROSCOPE_01 = 'pytch'
+    GYROSCOPE_01 = 'pitch'
     GYROSCOPE_02 = 'roll'
     GYROSCOPE_03 = 'yaw'
     COMPASS = 'compass'
@@ -60,13 +165,10 @@ class SenseHatSensor(SenseHat):
     ACCELERATION_03 = 'z'
 
     def __init__(self,
-                low_light:bool = True,
                 rounding:int = 4,
                 acceleration_multiplier:float = 1.0,
                 gyroscope_multiplier:float = 1.0):
-        # nothing to init via superclass
-        #super().__init__(None)
-        self.low_light = low_light
+        super().__init__()
         self.rounding = rounding
         self.acceleration_multiplier = acceleration_multiplier
         self.gyroscope_multiplier = gyroscope_multiplier
@@ -78,8 +180,6 @@ class SenseHatSensor(SenseHat):
         self.__gyroscope_01 = self.__gyroscope_02 = self.__gyroscope_03 = None
         self.__compass_north = None
         self.__acceleration_01 = self.__acceleration_02 = self.__acceleration_03 = None
-        # create a private SenseHat object to interact with the sensors API
-        self.__sense = Sense()
         # read initial sensor values
         self.data = self.sensors_data()
         logger.info(f"A sensehat object for its environmental sensors was initialized.")
@@ -90,31 +190,18 @@ class SenseHatSensor(SenseHat):
         returns a dict containing the current values of each.
         """
         # https://docs.python.org/3/library/time.html#time.asctime
-        self.__time = time.asctime()
-        # https://pythonhosted.org/sense-hat/api/
-        self.__pressure = round(self.__sense.get_pressure(), self.rounding)
-        self.__temperature_01 = round(self.__sense.get_temperature(), self.rounding)
-        self.__temperature_02 = round(self.__sense.get_temperature_from_pressure(), self.rounding)
-        self.__humidity = round(self.__sense.get_humidity(), self.rounding)
-        self.__gyroscope_01 = round(
-            self.__sense.get_gyroscope_raw().get("x") * self.gyroscope_multiplier,
-            self.rounding)
-        self.__gyroscope_02 = round(
-            self.__sense.get_gyroscope_raw().get("y") * self.gyroscope_multiplier,
-            self.rounding)
-        self.__gyroscope_03 = round(
-            self.__sense.get_gyroscope_raw().get("z") * self.gyroscope_multiplier,
-            self.rounding)
-        self.__compass_north = round(self.__sense.get_compass(), self.rounding)
-        self.__acceleration_01 = round(
-            self.__sense.get_accelerometer_raw().get("x") * self.acceleration_multiplier,
-            self.rounding)
-        self.__acceleration_02 = round(
-            self.__sense.get_accelerometer_raw().get("y") * self.acceleration_multiplier,
-            self.rounding)
-        self.__acceleration_03 = round(
-            self.__sense.get_accelerometer_raw().get("z") * self.acceleration_multiplier,
-            self.rounding)
+        self.__time = asctime()
+        self.__pressure = round(self.sense.get_pressure(), self.rounding)
+        self.__temperature_01 = round(self.sense.get_temperature(), self.rounding)
+        self.__temperature_02 = round(self.sense.get_temperature_from_pressure(), self.rounding)
+        self.__humidity = round(self.sense.get_humidity(), self.rounding)
+        self.__gyroscope_01 = round(self.sense.get_gyroscope_raw().get("x") * self.gyroscope_multiplier, self.rounding)
+        self.__gyroscope_02 = round(self.sense.get_gyroscope_raw().get("y") * self.gyroscope_multiplier, self.rounding)
+        self.__gyroscope_03 = round(self.sense.get_gyroscope_raw().get("z") * self.gyroscope_multiplier, self.rounding)
+        self.__compass_north = round(self.sense.get_compass(), self.rounding)
+        self.__acceleration_01 = round(self.sense.get_accelerometer_raw().get("x") * self.acceleration_multiplier, self.rounding)
+        self.__acceleration_02 = round(self.sense.get_accelerometer_raw().get("y") * self.acceleration_multiplier, self.rounding)
+        self.__acceleration_03 = round(self.sense.get_accelerometer_raw().get("z") * self.acceleration_multiplier, self.rounding)
         # generate and update data structure
         data = {
             SenseHatSensor.TIME : self.__time,
