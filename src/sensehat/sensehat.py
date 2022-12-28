@@ -6,7 +6,8 @@ Module to interface with the SenseHAT API
 from src.constants import constants as const
 # external imports
 import logging
-from sense_hat import SenseHat
+from abc import ABC, abstractmethod
+from sense_hat import SenseHat as Sense
 import time
 
 # start a loggin instance for this module using constants
@@ -15,13 +16,28 @@ logger = logging.getLogger(__name__)
 logger.setLevel(const.LOG_LEVEL)
 logger.debug("Initilized a logger object.")
 
+class SenseHat(ABC):
+    """
+    ABC for SenseHat Joystick, LED, and Sensor subclasses.
+    Add any arg or method that should be common to subclasses here.
+    """
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def disable(self):
+        """
+        Method to be called during cleanup procedures to disable/undo performed operations
+        """
+        pass
+
 class SenseHatJoystick():
     pass
 
 class SenseHatLed():
     pass
 
-class SenseHatSensor():
+class SenseHatSensor(SenseHat):
     """
     Generates a SenseHAT sensor object
     """
@@ -44,16 +60,12 @@ class SenseHatSensor():
     ACCELERATION_03 = 'z'
 
     def __init__(self,
-                zone:str,
-                room:str,
-                sensor:str,
                 low_light:bool = True,
                 rounding:int = 4,
                 acceleration_multiplier:float = 1.0,
                 gyroscope_multiplier:float = 1.0):
-        self.zone = zone
-        self.room = room
-        self.sensor = sensor
+        # nothing to init via superclass
+        #super().__init__(None)
         self.low_light = low_light
         self.rounding = rounding
         self.acceleration_multiplier = acceleration_multiplier
@@ -67,10 +79,10 @@ class SenseHatSensor():
         self.__compass_north = None
         self.__acceleration_01 = self.__acceleration_02 = self.__acceleration_03 = None
         # create a private SenseHat object to interact with the sensors API
-        self.__sense = SenseHat()
+        self.__sense = Sense()
         # read initial sensor values
         self.data = self.sensors_data()
-        logger.info(f"A sensehat object for sensor '{self.sensor}' was initialized.")
+        logger.info(f"A sensehat object for its environmental sensors was initialized.")
     
     def sensors_data(self) -> dict:
         """
@@ -105,41 +117,32 @@ class SenseHatSensor():
             self.rounding)
         # generate and update data structure
         data = {
-            self.zone : {
-                self.room : {
-                    self.sensor : {
-                        SenseHatSensor.TIME : self.__time,
-                        SenseHatSensor.PRESSURE : self.__pressure,
-                        SenseHatSensor.TEMPERATURE : {
-                            SenseHatSensor.TEMPERATURE_01 : self.__temperature_01,
-                            SenseHatSensor.TEMPERATURE_02 : self.__temperature_02
-                        },
-                        SenseHatSensor.HUMIDITY : self.__humidity,
-                        SenseHatSensor.GYROSCOPE : {
-                            SenseHatSensor.GYROSCOPE_01 : self.__gyroscope_01,
-                            SenseHatSensor.GYROSCOPE_02 : self.__gyroscope_02,
-                            SenseHatSensor.GYROSCOPE_03 : self.__gyroscope_03
-                        },
-                        SenseHatSensor.COMPASS : {
-                            SenseHatSensor.COMPASS_NORTH : self.__compass_north
-                        },
-                        SenseHatSensor.ACCELERATION : {
-                            SenseHatSensor.ACCELERATION_01 : self.__acceleration_01,
-                            SenseHatSensor.ACCELERATION_02 : self.__acceleration_02,
-                            SenseHatSensor.ACCELERATION_03 : self.__acceleration_03
-                        }
-                    }
-                }
-            }
+            SenseHatSensor.TIME : self.__time,
+            SenseHatSensor.PRESSURE : self.__pressure,
+            SenseHatSensor.TEMPERATURE : {
+                SenseHatSensor.TEMPERATURE_01 : self.__temperature_01,
+                SenseHatSensor.TEMPERATURE_02 : self.__temperature_02
+            },
+            SenseHatSensor.HUMIDITY : self.__humidity,
+            SenseHatSensor.GYROSCOPE : {
+                SenseHatSensor.GYROSCOPE_01 : self.__gyroscope_01,
+                SenseHatSensor.GYROSCOPE_02 : self.__gyroscope_02,
+                SenseHatSensor.GYROSCOPE_03 : self.__gyroscope_03
+            },
+            SenseHatSensor.COMPASS : {
+                SenseHatSensor.COMPASS_NORTH : self.__compass_north
+            },
+            SenseHatSensor.ACCELERATION : {
+                SenseHatSensor.ACCELERATION_01 : self.__acceleration_01,
+                SenseHatSensor.ACCELERATION_02 : self.__acceleration_02,
+                SenseHatSensor.ACCELERATION_03 : self.__acceleration_03
+            },
         }
         logger.info(f"A call to read and assign updated sensor data was made.")
         logger.debug(f"Data: '{data}'")
         return data
 
     def disable(self):
-        """
-        If appropriate, this method should be called during cleanup procedures.
-        For example, to turn off the LED matrix.
-        """
+        # This clas does not change the state of SenseHAT components
         pass
 

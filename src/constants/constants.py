@@ -1,6 +1,7 @@
 """
 Module that stores constant variables to be used by MULTIPLE packages/modules in the application.
-These are usually arguments for external packages that are imported by multiple modules.
+The constants here are usually arguments for external packages that are imported by multiple modules.
+They are not meant to be edited by users in most cases.
 
 For module specific constants (e.g., class defaults), set and refer to the module itself.
 """
@@ -14,4 +15,4 @@ LOG_FILENAME = LOG_DIR+LOG_FILE
 # see 'https://docs.python.org/3/howto/logging.html' for details
 LOG_FORMAT = '%(asctime)s.%(msecs)03d [%(levelname)s] [%(name)s] %(message)s'
 LOG_DATEFMT = '%Y-%m-%dT%H:%M:%S'
-LOG_LEVEL = 'INFO'
+LOG_LEVEL = 'DEBUG'

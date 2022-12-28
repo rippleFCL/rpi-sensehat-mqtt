@@ -31,7 +31,7 @@ mqtts = None
 shat_sensors = None
 shat_led = None
 shat_joystick = None
-streaming = Event()
+stop_streaming = Event()
 data = None
 
 def start(*signals)->None:
@@ -42,7 +42,7 @@ def start(*signals)->None:
 def stop(signum, frame=None)->None:
     logger.info(f"Received a signal '{signum}' to stop.")
     # cleanup procedures
-    streaming.set()
+    stop_streaming.set()
     # disconnect and stop threads
     if mqttc: mqttc.disable()
     if mqtts: mqtts.disable()
@@ -60,32 +60,28 @@ def main()->None:
     # create a config object
     config = utils.Configuration()
     # create mqtt client and sensehat objects
-    mqttc = mqtt.MqttClient(broker_address=config.mqtt_broker_address,
-                            client_id=config.mqtt_client_id,
-                            channel=config.mqtt_channel,
-                            zone=config.mqtt_zone,
-                            room=config.mqtt_room,
-                            sensor=config.mqtt_sensor,
-                            user=config.mqtt_user,
-                            password=config.mqtt_password)
-    shat_sensors = sensehat.SenseHatSensor(zone=config.mqtt_zone,
-                                            room=config.mqtt_room,
-                                            sensor=config.mqtt_sensor,
-                                            low_light=config.sensehat_low_light,
+    shat_sensors = sensehat.SenseHatSensor(low_light=config.sensehat_low_light,
                                             rounding=config.sensehat_rounding,
                                             acceleration_multiplier=config.sensehat_acceleration_multiplier,
                                             gyroscope_multiplier=config.sensehat_gyroscope_multiplier)
+    mqttc = mqtt.MqttClientPub(broker_address=config.mqtt_broker_address,
+                                zone=config.mqtt_zone,
+                                room=config.mqtt_room,
+                                client_id=config.mqtt_client_id,
+                                type='sensor',
+                                user=config.mqtt_user,
+                                password=config.mqtt_password)
     # main loop logic for sensor testing
     logger.info("Starting main sensor publishing loop.")
-    while not streaming.is_set():
+    while not stop_streaming.is_set():
         logger.debug("Updating and publishing sensor data.")
-        mqttc.publish(shat_sensors.sensors_data())
+        mqttc.publish(shat_sensors.sensors_data(), 'status')
         logger.debug(f"Waiting for signal or timeout ({config.resolution}).")
-        streaming.wait(config.resolution)
-        if not streaming.is_set():
+        stop_streaming.wait(config.resolution)
+        if not stop_streaming.is_set():
             logger.debug(f"Reached wait timeout.")
     # if it escapes loop, stop the application with code 0
-    logger.info("Streaming Event was set to True.")
+    logger.debug("Stop streaming event was set to True.")
     stop(0)
 
 

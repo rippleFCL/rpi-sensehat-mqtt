@@ -20,17 +20,14 @@ class Configuration():
     """
     Class that generates a configuration object from an initialization (INI) file
     """
-    
     # fallbacks for configuration variables
     # DEFAULT
     RESOLUTION = 300
     # MQTT
     MQTT_CLIENT_ID = 'sensehat_rnd'
     MQTT_BROKER_ADDRESS = 'mqtt://127.0.0.1:1883'
-    MQTT_CHANNEL = "hass"
     MQTT_ZONE = "downstairs"
-    MQTT_ROOM = "living-room"
-    MQTT_SENSOR = "sensehat"
+    MQTT_ROOM = "livingroom"
     # SENSEHAT
     SENSEHAT_LOW_LIGHT = True
     SENSEHAT_ROUNDING = 4
@@ -53,10 +50,8 @@ class Configuration():
         self.__mqtt_user = None
         self.__mqtt_password = None
         self.__mqtt_credentials_enabled = False
-        self.__mqtt_channel = Configuration.MQTT_CHANNEL
         self.__mqtt_zone = Configuration.MQTT_ZONE
         self.__mqtt_room = Configuration.MQTT_ROOM
-        self.__mqtt_sensor = Configuration.MQTT_SENSOR
         self.__sensehat_low_light = Configuration.SENSEHAT_LOW_LIGHT
         self.__sensehat_rounding = Configuration.SENSEHAT_ROUNDING
         self.__sensehat_acceleration_multiplier = Configuration.SENSEHAT_ACCELERATION_MULTIPLIER
@@ -83,6 +78,7 @@ class Configuration():
         # welcome_msg
         if 'welcome_msg' in self.__raw_config['DEFAULT']:
             self.__welcome_msg = self.__raw_config['DEFAULT'].get('welcome_msg', None)
+        
         # MQTT
         # mqtt_client_id
         if 'mqtt' in self.__raw_config.sections():
@@ -99,18 +95,13 @@ class Configuration():
         # mqtt_credentials_enabled
         # assume that user is None if MQTT does not use credentials
         self.__mqtt_credentials_enabled = True if self.mqtt_user else False
-        # mqtt_channel
-        if 'mqtt' in self.__raw_config.sections():
-            self.__mqtt_channel = self.__raw_config['mqtt'].get('channel', Configuration.MQTT_CHANNEL)
         # mqtt_zone
         if 'mqtt' in self.__raw_config.sections():
             self.__mqtt_zone = self.__raw_config['mqtt'].get('zone', Configuration.MQTT_ZONE)
         # mqtt_room
         if 'mqtt' in self.__raw_config.sections():
             self.__mqtt_room = self.__raw_config['mqtt'].get('room', Configuration.MQTT_ROOM)
-        # mqtt_sensor
-        if 'mqtt' in self.__raw_config.sections():
-            self.__mqtt_sensor = self.__raw_config['mqtt'].get('sensor', Configuration.MQTT_SENSOR)
+        
         # SENSEHAT
         # sensehat_low_light
         if 'sensehat' in self.__raw_config.sections():
@@ -157,20 +148,12 @@ class Configuration():
         return self.__mqtt_credentials_enabled
     
     @property
-    def mqtt_channel(self):
-        return self.__mqtt_channel
-
-    @property
     def mqtt_zone(self):
         return self.__mqtt_zone
 
     @property
     def mqtt_room(self):
         return self.__mqtt_room
-
-    @property
-    def mqtt_sensor(self):
-        return self.__mqtt_sensor
 
     @property
     def sensehat_low_light(self):
