@@ -53,11 +53,13 @@ class SenseHatJoystick(SenseHat):
     """
     Generates a SenseHAT Joystick object.
     """
-    # valid class directions
+    # class direction conventions
     LEFT = 'left'
     RIGHT = 'right'
     UP = 'up'
     DOWN = 'down'
+    MIDDLE = 'pressed'
+    DIRECTIONS = [UP, DOWN, LEFT, RIGHT, MIDDLE]
 
     def __init__(self):
         super().__init__()
@@ -68,39 +70,49 @@ class SenseHatJoystick(SenseHat):
     def directions(self):
         return self.directions
     @directions.setter
-    def directions(self, dir:str):
-        self.directions = dir
+    def directions(self, directions:Queue):
+        self.directions = directions
 
     def disable(self):
         # Nothing to do because does not change states of physical components
         pass
 
     # class specific methods
+    def __pushed_up(self, event):
+        if event.action != ACTION_RELEASED:
+            self.directions.put(SenseHatJoystick.UP)
+
+    def __pushed_down(self, event):
+        if event.action != ACTION_RELEASED:
+            self.directions.put(SenseHatJoystick.DOWN)
+
+    def __pushed_left(self, event):
+        if event.action != ACTION_RELEASED:
+            self.directions.put(SenseHatJoystick.LEFT)
+
+    def __pushed_right(self, event):
+        if event.action != ACTION_RELEASED:
+            self.directions.put(SenseHatJoystick.RIGHT)
+        
+    def __middle_click(self, event):
+        if event.action != ACTION_RELEASED:
+            self.directions.put(SenseHatJoystick.MIDDLE)
+    
     def wait_directions(self):
-        def __pushed_up(event):
-            if event.action != ACTION_RELEASED:
-                self.directions = SenseHatJoystick.UP
-
-        def __pushed_down(event):
-            if event.action != ACTION_RELEASED:
-                self.directions = SenseHatJoystick.DOWN
-
-        def __pushed_left(event):
-            if event.action != ACTION_RELEASED:
-                self.directions = SenseHatJoystick.LEFT
-
-        def __pushed_right(event):
-            if event.action != ACTION_RELEASED:
-                self.directions = SenseHatJoystick.RIGHT
-
-        # run these local functions whenever the stick is moved
-        self.sense.stick.direction_up = __pushed_up
-        self.sense.stick.direction_down = __pushed_down
-        self.sense.stick.direction_left = __pushed_left
-        self.sense.stick.direction_right = __pushed_right
-
+        """
+        Method to put this class object into wait for stick directions mode.
+        Directions are queued in 'directions', so if not 'directions.empty()',
+        dequeue and process them.
+        """
+        # run these functions whenever the stick is moved
+        self.sense.stick.direction_up = self.__pushed_up
+        self.sense.stick.direction_down = self.__pushed_down
+        self.sense.stick.direction_left = self.__pushed_left
+        self.sense.stick.direction_right = self.__pushed_right
+        # when joystick is clicked
+        self.sense.stick.direction_middle = self.__middle_click
+        # wait for interrupt
         logger.info(f"The client/type '{self.client_id}/{self.type}' is waiting for stick directions.")
-        # wait for signal to stop
         pause()
 
 class SenseHatLed(SenseHat):
@@ -139,7 +151,7 @@ class SenseHatLed(SenseHat):
         self._pixels = pixels
 
     def disable(self):
-        # Must clear the LED before disabling object
+        # Must turn off the LED matrix before disabling the object
         self.sense.clear()
 
 class SenseHatSensor(SenseHat):
@@ -182,7 +194,7 @@ class SenseHatSensor(SenseHat):
         self.__acceleration_01 = self.__acceleration_02 = self.__acceleration_03 = None
         # read initial sensor values
         self.data = self.sensors_data()
-        logger.info(f"A sensehat object for its environmental sensors was initialized.")
+        logger.info(f"A sensehat object for its sensors was initialized.")
     
     def sensors_data(self) -> dict:
         """
