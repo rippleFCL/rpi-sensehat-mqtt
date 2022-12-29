@@ -16,5 +16,6 @@ LOG_DATEFMT = '%Y-%m-%dT%H:%M:%S'
 LOG_LEVEL = 'DEBUG'
 
 # SENSEHAT
-# set to True to use sense_emu instead of sense_hat, then use sense_emu_gui to interface with a virtual 
+# set to True to use sense_emu instead of sense_hat for SenseHat objects,
+# then use the graphical app 'sense_emu_gui' to interface with the virtual SenseHAT 
 SENSEHAT_EMULATION = False
