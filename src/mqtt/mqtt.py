@@ -194,7 +194,7 @@ class MqttClient(ABC):
         Method that disables the client (disconnect and stop loop if initialized).
         To be used in exit, interrupts, and cleanup procedures.
         """
-        logger.info(f"Received a call to disable the client and type '{self.client_name}/{self.type}'.")
+        logger.debug(f"Received a call to disable the client and type '{self.client_name}/{self.type}'.")
         # disconnect and stop object's client
         if self.is_initialized:
             self.client.disconnect()

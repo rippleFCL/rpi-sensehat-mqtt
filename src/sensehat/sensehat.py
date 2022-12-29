@@ -74,8 +74,8 @@ class SenseHatJoystick(SenseHat):
         self._directions = directions
 
     def disable(self):
-        # Nothing to do because does not change states of physical components
-        pass
+        logger.debug(f"Received a call to disable a joystick sense object.")
+        # Nothing else to do because does not change states of physical components
 
     # class specific methods
     def __pushed_up(self, event):
@@ -151,6 +151,7 @@ class SenseHatLed(SenseHat):
         self._pixels = pixels
 
     def disable(self):
+        logger.debug(f"Received a call to disable an LED sense object.")
         # Must turn off the LED matrix before disabling the object
         self.sense.clear()
 
@@ -242,6 +243,6 @@ class SenseHatSensor(SenseHat):
         return data
 
     def disable(self):
-        # This clas does not change the state of SenseHAT components
-        pass
+        logger.debug(f"Received a call to disable a sensor sense object.")
+        # This clas does not change the state of SenseHAT components, so nothing else to do here
 
