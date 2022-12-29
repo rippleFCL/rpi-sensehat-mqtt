@@ -64,14 +64,14 @@ class SenseHatJoystick(SenseHat):
     def __init__(self):
         super().__init__()
         # queue for directions made by the joystick
-        self.directions = Queue()
+        self._directions = Queue()
     
     @property
     def directions(self):
-        return self.directions
+        return self._directions
     @directions.setter
     def directions(self, directions:Queue):
-        self.directions = directions
+        self._directions = directions
 
     def disable(self):
         # Nothing to do because does not change states of physical components
