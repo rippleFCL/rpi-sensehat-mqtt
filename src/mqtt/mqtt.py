@@ -35,16 +35,17 @@ class MqttClient(ABC):
     STATUS = 'status'
     FUNCTIONS = [COMMAND, STATUS]
 
-    def __init__(self, broker_address, zone, room, client_id, type, user, password):
+    def __init__(self, broker_address, zone, room, client_name, type, client_id, user, password):
         self._broker_url = urlparse(broker_address)
         self._zone = zone
         self._room = room
-        self._client_id = client_id
+        self._client_name = client_name
         self._type = type
+        self._client_id = client_id
         self._user = user
         self._password = password
-        # build topic from zone, room, client_id, and type
-        topics = [t for t in [self._zone, self._room, self._client_id, self._type] if t]
+        # build topic from zone, room, client_name, and type
+        topics = [t for t in [self._zone, self._room, self._client_name, self._type] if t]
         self._topic = "/".join(map(str, topics))
         # attr for the paho mqtt client for this object
         self._client = None
@@ -56,7 +57,7 @@ class MqttClient(ABC):
         self.connect()
         # MQTT client object has been fully initialized
         self._is_initialized = True
-        logger.info(f"The client/type subscriber '{self._client_id}/{self._type}' for the broker '{self._broker_url.hostname}' was initialized.")
+        logger.info(f"The client/type subscriber '{self._client_name}/{self._type}' for the broker '{self._broker_url.hostname}' was initialized.")
 
     @property
     def client(self):
@@ -88,8 +89,8 @@ class MqttClient(ABC):
         self._broker_url = broker_url
     
     @property
-    def client_id(self):
-        return self._client_id
+    def client_name(self):
+        return self._client_name
 
     @property
     def zone(self):
@@ -114,6 +115,10 @@ class MqttClient(ABC):
     def type(self, type):
         self._type = type if type in MqttClient.TYPES else None
 
+    @property
+    def client_id(self):
+        return self._client_id
+    
     @property
     def user(self):
         return self._user
@@ -140,7 +145,7 @@ class MqttClient(ABC):
     def on_message(self, client, userdata, message):
         # clients that parse messages should message.get() them if not messages.empty()
         self.messages.put(message)
-        logger.debug(f"The cliet/type '{self.client_id}/{self.type}' enqueued an encoded message.")
+        logger.debug(f"The cliet/type '{self.client_name}/{self.type}' enqueued an encoded message.")
 
     def on_log(client, userdata, level, buff):
         # only for logging purposes
@@ -149,11 +154,11 @@ class MqttClient(ABC):
 
     def on_publish(self, client, userdata, mid):
         # only for logging purposes
-        logger.debug(f"The broker '{self.broker_url.hostname}' has ACK publish request of mid '{mid}' by '{self.client_id}/{self.type}'.")
+        logger.debug(f"The broker '{self.broker_url.hostname}' has ACK publish request of mid '{mid}' by '{self.client_name}/{self.type}'.")
 
     def on_subscribe(self, client, userdata, mid, granted_qos):
         # only for logging purposes
-        logger.debug(f"The broker '{self.broker_url.hostname}' has ACK subscribe request of mid '{mid}' by '{self.client_id}/{self.type}'.")
+        logger.debug(f"The broker '{self.broker_url.hostname}' has ACK subscribe request of mid '{mid}' by '{self.client_name}/{self.type}'.")
 
     def connect(self):
         """
@@ -189,7 +194,7 @@ class MqttClient(ABC):
         Method that disables the client (disconnect and stop loop if initialized).
         To be used in exit, interrupts, and cleanup procedures.
         """
-        logger.info(f"Received a call to disable the client and type '{self.client_id}/{self.type}'.")
+        logger.info(f"Received a call to disable the client and type '{self.client_name}/{self.type}'.")
         # disconnect and stop object's client
         if self.is_initialized:
             self.client.disconnect()
@@ -203,15 +208,17 @@ class MqttClientSub(MqttClient):
                 broker_address:str,
                 zone:str,
                 room:str,
-                client_id:str,
+                client_name:str,
                 type:str,
+                client_id:str,
                 user:str = None,
                 password:str = None):
         super().__init__(broker_address=broker_address,
                         zone=zone,
                         room=room,
-                        client_id=client_id,
+                        client_name=client_name,
                         type=type,
+                        client_id=client_id,
                         user=user,
                         password=password)
         # Subs subscribe to the COMMAND topic because they just need to parse commands to this client type
@@ -229,18 +236,18 @@ class MqttClientSub(MqttClient):
         if rc == 0:
             # MQTT connected
             self.is_connected = True
-            logger.info(f"The client/type '{self.client_id}/{self.type}' connected successfully to '{self.broker_url.hostname}'.")
+            logger.info(f"The client/type '{self.client_name}/{self.type}' connected successfully to '{self.broker_url.hostname}'.")
             self.client.subscribe(topic=self.full_topic, qos=0)
             logger.debug(f"Subscribed to topic '{self.full_topic}' from broker '{self.broker_url.hostname}'.")
         else:
             # Connection error
-            logger.info(f"The client/type '{self.client_id}/{self.type}' got an error ({rc}) trying to connect to '{self.broker_url.hostname}'.")
+            logger.info(f"The client/type '{self.client_name}/{self.type}' got an error ({rc}) trying to connect to '{self.broker_url.hostname}'.")
 
     def on_disconnect(self, client, userdata, rc):
         if rc != 0:
             # MQTT disconnected
             self.is_connected = False
-            logger.info(f"The client/type '{self.client_id}/{self.type}' was disconnected from '{self.broker_url.hostname}'.")
+            logger.info(f"The client/type '{self.client_name}/{self.type}' was disconnected from '{self.broker_url.hostname}'.")
             self.client.unsubscribe(topic=self.full_topic)
             logger.debug(f"Unsubscribed from topic '{self.full_topic}' from broker '{self.broker_url.hostname}'.")
     
@@ -266,15 +273,17 @@ class MqttClientPub(MqttClient):
                 broker_address:str,
                 zone:str,
                 room:str,
-                client_id:str,
+                client_name:str,
                 type:str,
+                client_id:str,
                 user:str = None,
                 password:str = None):
         super().__init__(broker_address=broker_address,
                         zone=zone,
                         room=room,
-                        client_id=client_id,
+                        client_name=client_name,
                         type=type,
+                        client_id=client_id,
                         user=user,
                         password=password)
         # Pubs publish to the STATUS topic because they just need to set status to this client type
@@ -292,16 +301,16 @@ class MqttClientPub(MqttClient):
         if rc == 0:
             # MQTT connected
             self.is_connected = True
-            logger.info(f"The client/type '{self.client_id}/{self.type}' connected successfully to '{self.broker_url.hostname}'.")
+            logger.info(f"The client/type '{self.client_name}/{self.type}' connected successfully to '{self.broker_url.hostname}'.")
         else:
             # Connection error
-            logger.info(f"The client/type '{self.client_id}/{self.type}' got an error ({rc}) trying to connect to '{self.broker_url.hostname}'.")
+            logger.info(f"The client/type '{self.client_name}/{self.type}' got an error ({rc}) trying to connect to '{self.broker_url.hostname}'.")
 
     def on_disconnect(self, client, userdata, rc):
         if rc != 0:
             # MQTT disconnected
             self.is_connected = False
-            logger.info(f"The client/type '{self.client_id}/{self.type}' was disconnected from '{self.broker_url.hostname}'.")
+            logger.info(f"The client/type '{self.client_name}/{self.type}' was disconnected from '{self.broker_url.hostname}'.")
 
     # class specific methods
     def publish(self, data:dict, function:str=None)->None:

@@ -7,7 +7,6 @@ from src.constants import constants as const
 # external imports
 import logging
 from os import path
-from random import randint
 from configparser import ConfigParser, Error
 
 # start a loggin instance for this module using constants
@@ -24,7 +23,7 @@ class Configuration():
     # DEFAULT
     RESOLUTION = 300
     # MQTT
-    MQTT_CLIENT_ID = 'sensehat_rnd'
+    MQTT_CLIENT_NAME = 'sensehat01'
     MQTT_BROKER_ADDRESS = 'mqtt://127.0.0.1:1883'
     MQTT_ZONE = "downstairs"
     MQTT_ROOM = "livingroom"
@@ -46,7 +45,7 @@ class Configuration():
         self.__resolution = Configuration.RESOLUTION
         self.__welcome_msg = None
         self.__mqtt_broker_address = Configuration.MQTT_BROKER_ADDRESS
-        self.__mqtt_client_id = Configuration.MQTT_CLIENT_ID+str(randint(0,99))
+        self.__mqtt_client_name = Configuration.MQTT_CLIENT_NAME
         self.__mqtt_user = None
         self.__mqtt_password = None
         self.__mqtt_credentials_enabled = False
@@ -80,9 +79,9 @@ class Configuration():
             self.__welcome_msg = self.__raw_config['DEFAULT'].get('welcome_msg', None)
         
         # MQTT
-        # mqtt_client_id
+        # mqtt_client_name
         if 'mqtt' in self.__raw_config.sections():
-            self.__mqtt_client_id = self.__raw_config['mqtt'].get('client_id', Configuration.MQTT_CLIENT_ID)
+            self.__mqtt_client_name = self.__raw_config['mqtt'].get('client_name', Configuration.MQTT_CLIENT_NAME)
         # mqtt_broker_address
         if 'mqtt' in self.__raw_config.sections():
             self.__mqtt_broker_address = self.__raw_config['mqtt'].get('broker_address', Configuration.MQTT_BROKER_ADDRESS)
@@ -128,8 +127,8 @@ class Configuration():
         return self.__welcome_msg
     
     @property
-    def mqtt_client_id(self):
-        return self.__mqtt_client_id
+    def mqtt_client_name(self):
+        return self.__mqtt_client_name
 
     @property
     def mqtt_broker_address(self):
