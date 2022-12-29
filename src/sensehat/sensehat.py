@@ -34,6 +34,8 @@ class SenseHat(ABC):
     def __init__(self):
         # create a private SenseHat object to interact with the sensors API
         self._sense = Sense()
+        # helpers
+        self._is_enabled = False
     
     @property
     def sense(self):
@@ -41,6 +43,13 @@ class SenseHat(ABC):
     @sense.setter
     def sense(self, sense:Sense):
         self._sense = sense
+
+    @property
+    def is_enabled(self):
+        return self._is_enabled
+    @is_enabled.setter
+    def is_enabled(self, boolean:bool):
+        self._is_enabled = boolean
 
     @abstractmethod
     def disable(self):
@@ -65,6 +74,8 @@ class SenseHatJoystick(SenseHat):
         super().__init__()
         # queue for directions made by the joystick
         self._directions = Queue()
+        self.is_enabled = True
+        logger.info("A sensehat object for its joystick matrix was initialized.")
     
     @property
     def directions(self):
@@ -76,6 +87,8 @@ class SenseHatJoystick(SenseHat):
     def disable(self):
         logger.debug(f"Received a call to disable a joystick sense object.")
         # Nothing else to do because does not change states of physical components
+        if self.is_enabled:
+            self.is_enabled = False
 
     # class specific methods
     def __pushed_up(self, event):
@@ -132,6 +145,7 @@ class SenseHatLed(SenseHat):
         # List containing 64 smaller lists of [R, G, B] pixels (red, green, blue)
         # representing the 8x8 LED matrix.
         self._pixels = self.sense.get_pixels
+        self.is_enabled = True
         logger.info(f"A sensehat object for its LED matrix was initialized.")
 
     @property
@@ -153,7 +167,9 @@ class SenseHatLed(SenseHat):
     def disable(self):
         logger.debug(f"Received a call to disable an LED sense object.")
         # Must turn off the LED matrix before disabling the object
-        self.sense.clear()
+        if self.is_enabled:
+            self.sense.clear()
+            self.is_enabled = False
 
 class SenseHatSensor(SenseHat):
     """
@@ -195,6 +211,7 @@ class SenseHatSensor(SenseHat):
         self.__acceleration_01 = self.__acceleration_02 = self.__acceleration_03 = None
         # read initial sensor values
         self.data = self.sensors_data()
+        self.is_enabled = True
         logger.info(f"A sensehat object for its sensors was initialized.")
     
     def sensors_data(self) -> dict:
@@ -245,4 +262,5 @@ class SenseHatSensor(SenseHat):
     def disable(self):
         logger.debug(f"Received a call to disable a sensor sense object.")
         # This clas does not change the state of SenseHAT components, so nothing else to do here
-
+        if self.is_enabled:
+            self.is_enabled = False

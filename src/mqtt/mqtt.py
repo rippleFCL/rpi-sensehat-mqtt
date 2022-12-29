@@ -50,13 +50,13 @@ class MqttClient(ABC):
         # attr for the paho mqtt client for this object
         self._client = None
         # other common class object helpers
-        self._is_initialized = False
+        self._is_enabled = False
         self._is_connected = False
         self._messages = Queue()
         # initialize connection procedure
         self.connect()
         # MQTT client object has been fully initialized
-        self._is_initialized = True
+        self._is_enabled = True
         logger.info(f"The client/type subscriber '{self._client_name}/{self._type}' for the broker '{self._broker_url.hostname}' was initialized.")
 
     @property
@@ -67,11 +67,11 @@ class MqttClient(ABC):
         self._client = client
 
     @property
-    def is_initialized(self):
-        return self._is_initialized
-    @is_initialized.setter
-    def is_initialized(self, state:bool):
-        self._is_initialized = state
+    def is_enabled(self):
+        return self._is_enabled
+    @is_enabled.setter
+    def is_enabled(self, state:bool):
+        self._is_enabled = state
     
     @property
     def is_connected(self):
@@ -196,9 +196,10 @@ class MqttClient(ABC):
         """
         logger.debug(f"Received a call to disable the client and type '{self.client_name}/{self.type}'.")
         # disconnect and stop object's client
-        if self.is_initialized:
+        if self.is_enabled:
             self.client.disconnect()
             self.client.loop_stop()
+            self.is_enabled=False
 
 class MqttClientSub(MqttClient):
     """
