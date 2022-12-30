@@ -253,7 +253,7 @@ class MqttClientSub(MqttClient):
             logger.debug(f"Unsubscribed from topic '{self.full_topic}' from broker '{self.broker_url.hostname}'.")
     
     # class specific methods
-    def decode_message(self)->dict:
+    def decoded_message(self)->dict:
         """
         Method that decodes a message from this object's queue and returns a dict containig its contents
         """

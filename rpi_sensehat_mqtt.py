@@ -27,7 +27,7 @@ logger.debug("Initilized a logger object.")
 
 # methods for sense object threads
 def streaming_sensor():
-    logger.info("Starting main sensor publishing loop.")
+    logger.debug("Starting sensor publishing loop.")
     while not stop_streaming.is_set():
         logger.debug("Updating and publishing sensor data.")
         mqtt_pub_sensor.publish(sense_sensor.sensors_data())
@@ -36,18 +36,34 @@ def streaming_sensor():
         if not stop_streaming.is_set():
             logger.debug(f"Reached wait timeout.")
 
-# TODO
 def streaming_led():
+    logger.debug("Starting LED message loop.")
     while not stop_streaming.is_set():
-        # check queue and if not empyt, dequeue, parse and show, then loop
-        pass
+        if not mqtt_sub_led.messages.empty():
+            logger.debug("Received a message. Parsing it.")
+            msg = mqtt_sub_led.decoded_message()
+            # TODO: accept any valid LED function and args as payload
+            # for now, assume payload is only a display string command
+            logger.debug(f"Decoded message: '{msg}'")
+            if len(msg["s"])==1:
+                sense_led.sense.show_letter(s=msg["s"],
+                                            text_colour=msg["text_colour"],
+                                            back_colour=msg["back_colour"])
+            else:
+                sense_led.sense.show_message(text_string=msg["s"],
+                                            text_colour=msg["text_colour"],
+                                            back_colour=msg["back_colour"])
+            # wait at least a couple of seconds before displaying any other message
+            stop_streaming.wait(2)
 
 def streaming_joystick():
+    logger.debug("Starting joystick directions loop.")
     while not stop_streaming.is_set():
-        logger.info(f"Waiting for joystick directions.")
+        logger.debug(f"Waiting for joystick directions.")
+        # pass stop_streaming flag to prevent locks in wait_directions method
         sense_joystick.wait_directions(stop_streaming)
         if not sense_joystick.directions.empty():
-            logger.info(f"A joystick direction was detected. Publishing direction from queue.")
+            logger.debug(f"A joystick direction was detected. Publishing direction from queue.")
             mqtt_pub_joystick.publish(sense_joystick.joystick_data())
 
 # methods of the main logic
