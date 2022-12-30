@@ -9,7 +9,7 @@ Repo: https://github.com/cgomesu/rpi-sensehat-mqtt
 
 # local imports
 import src.constants as const
-# import src.errors as errors
+import src.errors as errors
 import src.utils as utils
 import src.mqtt as mqtt
 import src.sensehat as sensehat
@@ -43,22 +43,28 @@ def streaming_led():
             logger.debug("Received a payload. Parsing it.")
             payload = mqtt_sub_led.decoded_message()
             logger.debug(f"Decoded payload: '{payload}'")
-            # should be in {'method' : [**kwargs]} format
-            # TODO: validate payload format
+            if not isinstance(payload, dict):
+                logger.debug(f"The payload is not a dictionary. Skipping it.")
+                continue
+            # payload should be in {'method' : [**kwargs]} format
             for f in payload.keys():
                 f_kwargs = payload[f] if payload[f] else {}
-                # TODO: catch exceptions
-                if f=='set_rotation': sense_led.sense.set_rotation(**f_kwargs)
-                elif f=='flip_h': sense_led.sense.flip_h(f_kwargs)
-                elif f=='flip_v': sense_led.sense.flip_v(f_kwargs)
-                elif f=='set_pixels': sense_led.sense.set_pixels(**f_kwargs)
-                elif f=='set_pixel': sense_led.sense.set_pixel(**f_kwargs)
-                elif f=='load_image': sense_led.sense.load_image(**f_kwargs)
-                elif f=='clear': sense_led.sense.clear(**f_kwargs)
-                elif f=='show_message': sense_led.sense.show_message(**f_kwargs)
-                elif f=='show_letter': sense_led.sense.show_letter(**f_kwargs)
-                elif f=='wait': stop_streaming.wait(f_kwargs)
-                else: sense_led.sense.clear()
+                try:
+                    # https://pythonhosted.org/sense-hat/api/#led-matrix
+                    # if a valid setter, call with kwargs; else, log and skip.
+                    if f=='set_rotation': sense_led.sense.set_rotation(**f_kwargs)
+                    elif f=='flip_h': sense_led.sense.flip_h(f_kwargs)
+                    elif f=='flip_v': sense_led.sense.flip_v(f_kwargs)
+                    elif f=='set_pixels': sense_led.sense.set_pixels(**f_kwargs)
+                    elif f=='set_pixel': sense_led.sense.set_pixel(**f_kwargs)
+                    elif f=='load_image': sense_led.sense.load_image(**f_kwargs)
+                    elif f=='clear': sense_led.sense.clear(**f_kwargs)
+                    elif f=='show_message': sense_led.sense.show_message(**f_kwargs)
+                    elif f=='show_letter': sense_led.sense.show_letter(**f_kwargs)
+                    elif f=='wait': stop_streaming.wait(f_kwargs)
+                    else: logger.info(f"The method '{f}' in the payload '{payload}' is not supported.")
+                except TypeError as terr:
+                    logger.info(f"Unable to call '{f}' with args '{f_kwargs}': {terr}")
             # wait a second before displaying any new messages from the mqtt topic
             stop_streaming.wait(1)
 
@@ -109,37 +115,37 @@ def main():
     # create sensehat objects
     global sense_sensor, sense_led, sense_joystick
     sense_sensor = sensehat.SenseHatSensor(rounding=config.sensehat_rounding,
-                                        acceleration_multiplier=config.sensehat_acceleration_multiplier,
-                                        gyroscope_multiplier=config.sensehat_gyroscope_multiplier)
+        acceleration_multiplier=config.sensehat_acceleration_multiplier,
+        gyroscope_multiplier=config.sensehat_gyroscope_multiplier)
     sense_led = sensehat.SenseHatLed(low_light=config.sensehat_low_light)
     sense_joystick = sensehat.SenseHatJoystick()
     senses.extend([sense_sensor, sense_led, sense_joystick])
     # create mqtt objects
     global mqtt_pub_sensor, mqtt_sub_led, mqtt_pub_joystick
     mqtt_pub_sensor = mqtt.MqttClientPub(broker_address=config.mqtt_broker_address,
-                            zone=config.mqtt_zone,
-                            room=config.mqtt_room,
-                            client_name=config.mqtt_client_name,
-                            type='sensor',
-                            client_id=f"{config.mqtt_client_name}_sensor",
-                            user=config.mqtt_user,
-                            password=config.mqtt_password)
+        zone=config.mqtt_zone,
+        room=config.mqtt_room,
+        client_name=config.mqtt_client_name,
+        type='sensor',
+        client_id=f"{config.mqtt_client_name}_sensor",
+        user=config.mqtt_user,
+        password=config.mqtt_password)
     mqtt_sub_led = mqtt.MqttClientSub(broker_address=config.mqtt_broker_address,
-                            zone=config.mqtt_zone,
-                            room=config.mqtt_room,
-                            client_name=config.mqtt_client_name,
-                            type='led',
-                            client_id=f"{config.mqtt_client_name}_led",
-                            user=config.mqtt_user,
-                            password=config.mqtt_password)
+        zone=config.mqtt_zone,
+        room=config.mqtt_room,
+        client_name=config.mqtt_client_name,
+        type='led',
+        client_id=f"{config.mqtt_client_name}_led",
+        user=config.mqtt_user,
+        password=config.mqtt_password)
     mqtt_pub_joystick = mqtt.MqttClientPub(broker_address=config.mqtt_broker_address,
-                            zone=config.mqtt_zone,
-                            room=config.mqtt_room,
-                            client_name=config.mqtt_client_name,
-                            type='joystick',
-                            client_id=f"{config.mqtt_client_name}_joystick",
-                            user=config.mqtt_user,
-                            password=config.mqtt_password)
+        zone=config.mqtt_zone,
+        room=config.mqtt_room,
+        client_name=config.mqtt_client_name,
+        type='joystick',
+        client_id=f"{config.mqtt_client_name}_joystick",
+        user=config.mqtt_user,
+        password=config.mqtt_password)
     mqtts.extend([mqtt_pub_sensor, mqtt_sub_led, mqtt_pub_joystick])
     # thread handlers
     thread_sensor = threading.Thread(target=streaming_sensor)
