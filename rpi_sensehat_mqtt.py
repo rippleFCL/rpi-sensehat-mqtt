@@ -9,7 +9,7 @@ Repo: https://github.com/cgomesu/rpi-sensehat-mqtt
 
 # local imports
 import src.constants as const
-import src.errors as errors
+import src.errors as err
 import src.utils as utils
 import src.mqtt as mqtt
 import src.sensehat as sensehat
@@ -27,24 +27,28 @@ logger.debug("Initilized a logger object.")
 
 # methods for sense object threads
 def streaming_sensor():
-    logger.debug("Starting sensor publishing loop.")
+    logger.info("Starting sensor publishing loop.")
     while not stop_streaming.is_set():
         logger.debug("Updating and publishing sensor data.")
         mqtt_pub_sensor.publish(sense_sensor.sensors_data())
         logger.debug(f"Waiting for signal or timeout ({config.resolution}).")
         stop_streaming.wait(config.resolution)
         if not stop_streaming.is_set():
-            logger.debug(f"Reached wait timeout.")
+            logger.warning(f"Reached wait timeout.")
 
 def streaming_led():
-    logger.debug("Starting LED message loop.")
+    logger.info("Starting LED message loop.")
     while not stop_streaming.is_set():
         if not mqtt_sub_led.messages.empty():
             logger.debug("Received a payload. Parsing it.")
-            payload = mqtt_sub_led.decoded_message()
+            try:
+                payload = mqtt_sub_led.decoded_message()
+            except err.MqttDecodingError as mderr:
+                logger.warning(f"Could not decode mqtt message. Skipping it. Error: {mderr.error}")
+                continue
             logger.debug(f"Decoded payload: '{payload}'")
             if not isinstance(payload, dict):
-                logger.debug(f"The payload is not a dictionary. Skipping it.")
+                logger.warning(f"The payload is not a dictionary. Skipping it.")
                 continue
             # payload should be in {'method' : [**kwargs]} format
             for f in payload.keys():
@@ -62,14 +66,14 @@ def streaming_led():
                     elif f=='show_message': sense_led.sense.show_message(**f_kwargs)
                     elif f=='show_letter': sense_led.sense.show_letter(**f_kwargs)
                     elif f=='wait': stop_streaming.wait(f_kwargs)
-                    else: logger.info(f"The method '{f}' in the payload '{payload}' is not supported.")
+                    else: logger.warning(f"The method '{f}' in the payload '{payload}' is not supported.")
                 except TypeError as terr:
                     logger.info(f"Unable to call '{f}' with args '{f_kwargs}': {terr}")
             # wait a second before displaying any new messages from the mqtt topic
             stop_streaming.wait(1)
 
 def streaming_joystick():
-    logger.debug("Starting joystick directions loop.")
+    logger.info("Starting joystick directions loop.")
     while not stop_streaming.is_set():
         logger.debug(f"Waiting for joystick directions.")
         # pass stop_streaming flag to prevent locks in wait_directions method
@@ -111,7 +115,17 @@ def main():
     # TODO: catch exceptions in object initialization and loop logic
     # create a config object
     global config
-    config = utils.Configuration()
+    try:
+        config = utils.Configuration()
+    except err.InvalidConfigFile as cferr:
+        logger.info(f"Unable to load settings because the config file does not exist: {cferr.path_file}.")
+        stop(1)
+    except err.ConfigParseError as cperr:
+        logger.info(f"Unable to parse settings in the config file: {cperr.error}.")
+        stop(1)
+    except err.InvalidConfigAttr as caerr:
+        logger.info(f"Check your config file. There's an invalid attribute: {caerr.attribute}.")
+        stop(1)
     # create sensehat objects
     global sense_sensor, sense_led, sense_joystick
     sense_sensor = sensehat.SenseHatSensor(rounding=config.sensehat_rounding,
@@ -122,37 +136,41 @@ def main():
     senses.extend([sense_sensor, sense_led, sense_joystick])
     # create mqtt objects
     global mqtt_pub_sensor, mqtt_sub_led, mqtt_pub_joystick
-    mqtt_pub_sensor = mqtt.MqttClientPub(broker_address=config.mqtt_broker_address,
-        zone=config.mqtt_zone,
-        room=config.mqtt_room,
-        client_name=config.mqtt_client_name,
-        type='sensor',
-        client_id=f"{config.mqtt_client_name}_sensor",
-        user=config.mqtt_user,
-        password=config.mqtt_password)
-    mqtt_sub_led = mqtt.MqttClientSub(broker_address=config.mqtt_broker_address,
-        zone=config.mqtt_zone,
-        room=config.mqtt_room,
-        client_name=config.mqtt_client_name,
-        type='led',
-        client_id=f"{config.mqtt_client_name}_led",
-        user=config.mqtt_user,
-        password=config.mqtt_password)
-    mqtt_pub_joystick = mqtt.MqttClientPub(broker_address=config.mqtt_broker_address,
-        zone=config.mqtt_zone,
-        room=config.mqtt_room,
-        client_name=config.mqtt_client_name,
-        type='joystick',
-        client_id=f"{config.mqtt_client_name}_joystick",
-        user=config.mqtt_user,
-        password=config.mqtt_password)
-    mqtts.extend([mqtt_pub_sensor, mqtt_sub_led, mqtt_pub_joystick])
+    try:
+        mqtt_pub_sensor = mqtt.MqttClientPub(broker_address=config.mqtt_broker_address,
+            zone=config.mqtt_zone,
+            room=config.mqtt_room,
+            client_name=config.mqtt_client_name,
+            type='sensor',
+            client_id=f"{config.mqtt_client_name}_sensor",
+            user=config.mqtt_user,
+            password=config.mqtt_password)
+        mqtt_sub_led = mqtt.MqttClientSub(broker_address=config.mqtt_broker_address,
+            zone=config.mqtt_zone,
+            room=config.mqtt_room,
+            client_name=config.mqtt_client_name,
+            type='led',
+            client_id=f"{config.mqtt_client_name}_led",
+            user=config.mqtt_user,
+            password=config.mqtt_password)
+        mqtt_pub_joystick = mqtt.MqttClientPub(broker_address=config.mqtt_broker_address,
+            zone=config.mqtt_zone,
+            room=config.mqtt_room,
+            client_name=config.mqtt_client_name,
+            type='joystick',
+            client_id=f"{config.mqtt_client_name}_joystick",
+            user=config.mqtt_user,
+            password=config.mqtt_password)
+        mqtts.extend([mqtt_pub_sensor, mqtt_sub_led, mqtt_pub_joystick])
+    except err.InvalidMqttAttr as maerr:
+        logger.info(f"Check your config becayse the following MQTT attribute is invalid: '{maerr.attribute}'")
+        stop(1)
     # thread handlers
     thread_sensor = threading.Thread(target=streaming_sensor)
     thread_led = threading.Thread(target=streaming_led)
     thread_joystick = threading.Thread(target=streaming_joystick)
     threads.extend([thread_sensor, thread_led, thread_joystick])
-    # finished setting up, then print welcome message if set (blocking)
+    # finished setting up, then print welcome message if set (this blocking)
     if config.welcome_msg: sense_led.sense.show_message(config.welcome_msg)
     # start threads and wait for interrupt signal in this one
     logger.debug(f"Starting threads '{threads}'.")
