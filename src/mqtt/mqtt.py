@@ -314,7 +314,7 @@ class MqttClientPub(MqttClient):
             logger.info(f"The client/type '{self.client_name}/{self.type}' was disconnected from '{self.broker_url.hostname}'.")
 
     # class specific methods
-    def publish(self, data:dict, function:str=None)->None:
+    def publish(self, data:dict)->None:
         """
         Method to publish data in dict format to the MQTT broker.
         Make sure the topic is right for the data dict format and function is a string
@@ -327,4 +327,4 @@ class MqttClientPub(MqttClient):
                             payload=json_data,
                             qos=0,
                             retain=True)
-        logger.debug(f"A publish request to topic '{self.topic}' was made.")
+        logger.debug(f"A publish request to topic '{self.full_topic}' was made to publish the following JSON data: {json_data}.")
