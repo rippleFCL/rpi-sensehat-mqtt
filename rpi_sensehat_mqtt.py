@@ -40,21 +40,27 @@ def streaming_led():
     logger.debug("Starting LED message loop.")
     while not stop_streaming.is_set():
         if not mqtt_sub_led.messages.empty():
-            logger.debug("Received a message. Parsing it.")
-            msg = mqtt_sub_led.decoded_message()
-            # TODO: accept any valid LED function and args as payload
-            # for now, assume payload is only a display string command
-            logger.debug(f"Decoded message: '{msg}'")
-            if len(msg["s"])==1:
-                sense_led.sense.show_letter(s=msg["s"],
-                                            text_colour=msg["text_colour"],
-                                            back_colour=msg["back_colour"])
-            else:
-                sense_led.sense.show_message(text_string=msg["s"],
-                                            text_colour=msg["text_colour"],
-                                            back_colour=msg["back_colour"])
-            # wait at least a couple of seconds before displaying any other message
-            stop_streaming.wait(2)
+            logger.debug("Received a payload. Parsing it.")
+            payload = mqtt_sub_led.decoded_message()
+            logger.debug(f"Decoded payload: '{payload}'")
+            # should be in {'method' : [**kwargs]} format
+            # TODO: validate payload format
+            for f in payload.keys():
+                f_kwargs = payload[f] if payload[f] else {}
+                # TODO: catch exceptions
+                if f=='set_rotation': sense_led.sense.set_rotation(**f_kwargs)
+                elif f=='flip_h': sense_led.sense.flip_h(f_kwargs)
+                elif f=='flip_v': sense_led.sense.flip_v(f_kwargs)
+                elif f=='set_pixels': sense_led.sense.set_pixels(**f_kwargs)
+                elif f=='set_pixel': sense_led.sense.set_pixel(**f_kwargs)
+                elif f=='load_image': sense_led.sense.load_image(**f_kwargs)
+                elif f=='clear': sense_led.sense.clear(**f_kwargs)
+                elif f=='show_message': sense_led.sense.show_message(**f_kwargs)
+                elif f=='show_letter': sense_led.sense.show_letter(**f_kwargs)
+                elif f=='wait': stop_streaming.wait(f_kwargs)
+                else: sense_led.sense.clear()
+            # wait a second before displaying any new messages from the mqtt topic
+            stop_streaming.wait(1)
 
 def streaming_joystick():
     logger.debug("Starting joystick directions loop.")
