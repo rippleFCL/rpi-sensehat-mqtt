@@ -13,7 +13,7 @@ LOG_FILENAME = LOG_DIR+LOG_FILE
 # see 'https://docs.python.org/3/howto/logging.html' for details
 LOG_FORMAT = '%(asctime)s.%(msecs)03d [%(levelname)s] [%(name)s] %(message)s'
 LOG_DATEFMT = '%Y-%m-%dT%H:%M:%S'
-LOG_LEVEL = 'DEBUG'
+LOG_LEVEL = 'INFO'
 
 # SENSEHAT
 # set to True to use sense_emu instead of sense_hat for SenseHat objects,
