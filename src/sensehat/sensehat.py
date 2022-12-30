@@ -17,8 +17,8 @@ else:
 import logging
 from time import asctime
 from abc import ABC, abstractmethod
-from signal import pause
 from queue import Queue
+from threading import Event
 
 # start a loggin instance for this module using constants
 logging.basicConfig(filename=const.LOG_FILENAME, format=const.LOG_FORMAT, datefmt=const.LOG_DATEFMT)
@@ -63,17 +63,14 @@ class SenseHatJoystick(SenseHat):
     Generates a SenseHAT Joystick object.
     """
     # class direction conventions
-    LEFT = 'left'
-    RIGHT = 'right'
-    UP = 'up'
-    DOWN = 'down'
-    MIDDLE = 'pressed'
-    DIRECTIONS = [UP, DOWN, LEFT, RIGHT, MIDDLE]
+    DIRECTION = 'direction'
 
     def __init__(self):
         super().__init__()
         # queue for directions made by the joystick
         self._directions = Queue()
+        # init flag for the detection of joystick directions
+        self._stop_flag = Event()
         self.is_enabled = True
         logger.info("A sensehat object for its joystick matrix was initialized.")
     
@@ -84,6 +81,13 @@ class SenseHatJoystick(SenseHat):
     def directions(self, directions:Queue):
         self._directions = directions
 
+    @property
+    def stop_flag(self):
+        return self._stop_flag
+    @stop_flag.setter
+    def stop_flag(self, stop_flag:Event):
+        self._stop_flag = stop_flag
+
     def disable(self):
         logger.debug(f"Received a call to disable a joystick sense object.")
         # Nothing else to do because does not change states of physical components
@@ -91,42 +95,27 @@ class SenseHatJoystick(SenseHat):
             self.is_enabled = False
 
     # class specific methods
-    def __pushed_up(self, event):
-        if event.action != ACTION_RELEASED:
-            self.directions.put(SenseHatJoystick.UP)
-
-    def __pushed_down(self, event):
-        if event.action != ACTION_RELEASED:
-            self.directions.put(SenseHatJoystick.DOWN)
-
-    def __pushed_left(self, event):
-        if event.action != ACTION_RELEASED:
-            self.directions.put(SenseHatJoystick.LEFT)
-
-    def __pushed_right(self, event):
-        if event.action != ACTION_RELEASED:
-            self.directions.put(SenseHatJoystick.RIGHT)
-        
-    def __middle_click(self, event):
-        if event.action != ACTION_RELEASED:
-            self.directions.put(SenseHatJoystick.MIDDLE)
-    
-    def wait_directions(self):
+    def wait_directions(self, external_event:Event=False):
         """
         Method to put this class object into wait for stick directions mode.
+        Receives an optional external (threading) event to control loop.
         Directions are queued in 'directions', so if not 'directions.empty()',
         dequeue and process them.
         """
-        # run these functions whenever the stick is moved
-        self.sense.stick.direction_up = self.__pushed_up
-        self.sense.stick.direction_down = self.__pushed_down
-        self.sense.stick.direction_left = self.__pushed_left
-        self.sense.stick.direction_right = self.__pushed_right
-        # when joystick is clicked
-        self.sense.stick.direction_middle = self.__middle_click
-        # wait for interrupt
-        logger.info(f"The client/type '{self.client_id}/{self.type}' is waiting for stick directions.")
-        pause()
+        logger.info(f"Waiting for joystick directions.")
+        while not external_event.is_set() and not self.stop_flag.is_set():
+            for event in self.sense.stick.get_events():
+                if event.action == ACTION_RELEASED:
+                    logger.info(f"Detected a joystick release for direction '{event.direction}.'.")
+                    self.directions.put(event.direction)
+                    self.stop_flag.set()
+        # reset the stop flag before the next call
+        self.stop_flag.clear()
+
+    def joystick_data(self) -> dict:
+        if self.directions.empty():
+            return {SenseHatJoystick.DIRECTION : ''}
+        return {SenseHatJoystick.DIRECTION : self.directions.get()}
 
 class SenseHatLed(SenseHat):
     """
