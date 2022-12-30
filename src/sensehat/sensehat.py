@@ -6,7 +6,9 @@ Related doc: https://pythonhosted.org/sense-hat/api/
 
 # local imports
 from src.constants import constants as const
-# emulation settings
+from src.utils import validate as val
+from src.errors import errors as err
+# local emulation settings
 if const.SENSEHAT_EMULATION:
     from sense_emu import SenseHat as Sense
     from sense_emu import ACTION_PRESSED, ACTION_HELD, ACTION_RELEASED
@@ -133,7 +135,7 @@ class SenseHatLed(SenseHat):
         self.sense.clear()
         # List containing 64 smaller lists of [R, G, B] pixels (red, green, blue)
         # representing the 8x8 LED matrix.
-        self._pixels = self.sense.get_pixels
+        self._pixels = self.sense.get_pixels()
         self.is_enabled = True
         logger.info(f"A sensehat object for its LED matrix was initialized.")
 
@@ -150,7 +152,9 @@ class SenseHatLed(SenseHat):
         return self._pixels
     @pixels.setter
     def pixels(self, pixels:list):
-        # TODO: validade
+        if not val.pixels(pixels):
+            logger.info(f"The following pixels LED of length '{len(pixels)}' is invalid: '{pixels}'.")
+            raise err.InvalidSenseAttr(f"The pixels LED of length '{len(pixels)}' is invalid.", 'pixels')
         self._pixels = pixels
 
     def disable(self):

@@ -4,6 +4,8 @@ This module is meant to be use in conjunction with the paho-mqtt package.
 """
 # local imports
 from src.constants import constants as const
+from src.utils import validate as val
+from src.errors import errors as err
 # external imports
 import logging
 from abc import ABC, abstractmethod
@@ -36,7 +38,16 @@ class MqttClient(ABC):
     FUNCTIONS = [COMMAND, STATUS]
 
     def __init__(self, broker_address, zone, room, client_name, type, client_id, user, password):
-        self._broker_url = urlparse(broker_address)
+        # check broker_url first
+        try:
+            b_url = urlparse(broker_address)
+            if not val.broker_url(b_url):
+                logger.info(f"There was an error parsing the address {broker_address}.")
+                raise err.InvalidMqttAttr(f"There was an error parsing the address {broker_address}.", 'broker_address')
+            self._broker_url = b_url
+        except ValueError as verr:
+            logger.info(f"There was a value error parsing the address {broker_address}: '{verr.args}'")
+            raise err.InvalidMqttAttr(f"Unable to parse the address {broker_address}: '{verr.args}'", 'broker_address')
         self._zone = zone
         self._room = room
         self._client_name = client_name
@@ -83,10 +94,6 @@ class MqttClient(ABC):
     @property
     def broker_url(self):
         return self._broker_url
-    @broker_url.setter
-    def broker_url(self, broker_url):
-        # TODO: Validate and handle exceptions from urlparse()
-        self._broker_url = broker_url
     
     @property
     def client_name(self):
@@ -103,10 +110,6 @@ class MqttClient(ABC):
     @property
     def topic(self):
         return self._topic
-    @topic.setter
-    def topic(self, topic):
-        # TODO: Validate
-        self._topic = topic
 
     @property
     def type(self):
@@ -230,7 +233,6 @@ class MqttClientSub(MqttClient):
         return self._full_topic
     @full_topic.setter
     def full_topic(self, full_topic:str):
-        # TODO: validate
         self._full_topic = full_topic
 
     def on_connect(self, client, userdata, flags, rc):
@@ -259,12 +261,18 @@ class MqttClientSub(MqttClient):
         """
         if self.messages.empty():
             return {}
-        # TODO: Catch exceptions parsing these messages
         # deqeue and stringify message
         message = self.messages.get()
         message = str(message.payload.decode("utf-8"))
         # assume message is always JSON format
-        return json.loads(message)
+        try:
+            return json.loads(message)
+        except json.JSONDecodeError as jerr:
+            logger.info(f"There was an error deserializing the following message: '{message}'. Error: '{jerr.msg}'")
+            raise err.MqttDecodingError(f"There was an error deserializing the message.", jerr.msg)
+        except TypeError:
+            logger.info(f"The following message is of wrong type: '{message}'.")
+            raise err.MqttDecodingError(f"The message is of wrong type.", 'TypeError')
 
 class MqttClientPub(MqttClient):
     """
@@ -295,7 +303,6 @@ class MqttClientPub(MqttClient):
         return self._full_topic
     @full_topic.setter
     def full_topic(self, full_topic:str):
-        # TODO: validate
         self._full_topic = full_topic
 
     def on_connect(self, client, userdata, flags, rc):
@@ -321,7 +328,6 @@ class MqttClientPub(MqttClient):
         that indicates the last topic for this publisher (e.g., 'status' to publish
         sensor data; 'cmd' to publish a command that will be digested by a topic subscriber).
         """
-        # TODO: validate data
         json_data = json.dumps(data)
         self.client.publish(topic=self.full_topic,
                             payload=json_data,

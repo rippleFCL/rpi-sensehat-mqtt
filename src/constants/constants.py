@@ -19,3 +19,8 @@ LOG_LEVEL = 'DEBUG'
 # set to True to use sense_emu instead of sense_hat for SenseHat objects,
 # then use the graphical app 'sense_emu_gui' to interface with the virtual SenseHAT 
 SENSEHAT_EMULATION = False
+
+# MQTT
+# TODO: after adding support for TLS, add 'mqtts' and 'wss' here
+# list of supported protocols/schema
+MQTT_PROTOCOLS = ['mqtt', 'ws', 'tcp']
