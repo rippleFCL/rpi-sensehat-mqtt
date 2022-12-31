@@ -148,25 +148,25 @@ As outlined before, the application creates three independent connections with t
 
     ```json
     {
-        "time" : time,
-        "pressure" : pressure,
+        "time" : "time_value",
+        "pressure" : "pressure_value",
         "temperature" : {
-            "from_humidty" : temperature,
-            "from_pressure" : temperature
+            "from_humidty" : "temp_value",
+            "from_pressure" : "temp_value"
         },
-        "humidity" : humidity,
+        "humidity" : "humidity_value",
         "gyroscope" : {
-            "pytch" : gyroscope,
-            "roll" : gyroscope,
-            "yaw" : gyroscope
+            "pytch" : "pytch_value",
+            "roll" : "roll_value",
+            "yaw" : "yaw_value"
         },
         "compass" : {
-            "north" : compass_north
+            "north" : "north_value"
         },
         "acceleration" : {
-            "x" : acceleration,
-            "y" : acceleration,
-            "z" : acceleration
+            "x" : "x_value",
+            "y" : "y_value",
+            "z" : "z_value"
         },
     }
 
@@ -197,9 +197,9 @@ As outlined before, the application creates three independent connections with t
     ```json
     {
         "led_method" : {
-            "arg1" : value1,
-            "arg2" : value2,
-            "argN" : valueN,
+            "arg1" : "value1",
+            "arg2" : "value2",
+            "argN" : "valueN",
         }
     }
     ```
@@ -211,11 +211,11 @@ As outlined before, the application creates three independent connections with t
     ```json
     {
         "led_method1" : {
-            "arg1" : value1,
+            "arg1" : "value1",
         },
         "led_method2" : {
-            "arg1" : value1,
-            "arg2" : value2
+            "arg1" : "value1",
+            "arg2" : "value2"
         }
     }
     ```
