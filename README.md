@@ -1,9 +1,15 @@
 # rpi-sensehat-mqtt
 
-This a Python application for the [Raspberry Pi](https://www.raspberrypi.com) (RPi) that allows interfacing with the [SenseHAT](https://www.raspberrypi.com/documentation/accessories/sense-hat.html) over [MQTT](https://en.wikipedia.org/wiki/MQTT). Of note, the project is a fork of [mirkodcompataretti's rpi-sense-hat](https://github.com/mirkodcomparetti/rpi-sensehat_mqtt) that ended up being heavily modified to reflect my own idea of implementation, which can be illustrated as follows:
+This a Python application for the [Raspberry Pi](https://www.raspberrypi.com) (RPi) that allows interfacing with the [SenseHAT](https://www.raspberrypi.com/products/sense-hat/) over [MQTT](https://en.wikipedia.org/wiki/MQTT). 
 
 <p align="center">
-  <img src="assets/concept.png" width="50%">
+    <img src="assets/rpi_sensehat.png" width="60%">
+</p>
+
+Of note, the project is a fork of [mirkodcompataretti's rpi-sense-hat](https://github.com/mirkodcomparetti/rpi-sensehat_mqtt) that ended up being heavily modified to reflect my own idea of implementation, which can be illustrated as follows:
+
+<p align="center">
+    <img src="assets/concept.png" width="50%">
 </p>
 
 That is, the `rpi-sensehat-mqtt` application publishes **sensor** and **joystick** data to the MQTT broker to be consumed by a home automation server (e.g., [Home Assistant](https://www.home-assistant.io/)). In addition, it also subcribes to an **LED** topic to display payloads published to the broker. For instance, when an homr automation publishes a message to the LED topic, the SenseHAT will consume it and display it on the LED matrix.
@@ -94,7 +100,125 @@ You should be all set at this point. So, head to [Usage](#usage) to learn the sp
 
 ## Usage
 
-- TBA
+The main logic is in the `rpi_sensehat_mqtt.py` script and most of the configurable variables (e.g., MQTT address and credentials, sensor publish resolution) are in the `CONFIG.ini` [INI](https://en.wikipedia.org/wiki/INI_file) file.  **You must edit the latter before running the former**.  (Advanced usage variables can be found in `src/constants/constants.py` and as constants in individual modules. Do not change them unless you know what you are doing.)
+
+The main script can be executed in two ways, namely by using the shebang or calling `python3` directly:
+
+```sh
+./rpi_sensehat_mqtt.py
+```
+
+```sh
+python3 rpi_sensehat_mqtt.py
+```
+
+To run the script in the background, refer to the [Run as a Service](#run-as-a-service) section.
+
+### MQTT
+
+The main purpose of this application is to interface with the SenseHAT via [MQTT](https://en.wikipedia.org/wiki/MQTT). By default, it will publish/subscribe to the following topic level structure:
+
+```mqtt
+zone/room/client_name
+```
+
+in which `zone`, `room`, and `client_name` can be configured in `CONFIG.ini`. For example, if the `CONFIG.ini` contains
+
+```ini
+zone = downstairs
+room = livingroom
+client_name = sensehat01
+```
+
+then the application will publish/subscribe to the following topic:
+
+```mqtt
+downstairs/livingroom/sensehat01
+```
+
+As outlined before, the application creates three independent connections with the MQTT broker, namely (a) one to publish sensor data, (b) one to publish joystick directions, and (c) one to subscribe to a LED matrix sub-topic. In all three cases, payloads must be in [JSON](https://en.wikipedia.org/wiki/JSON#Syntax) (or be a `dict` or key:value pairs) data format.  The specifics of each are explained next.
+
+- The payload of the **sensor** connection is published to the following subtopic `sensor/status`, as follows:
+
+    ```mqtt
+    downstairs/livingroom/sensehat01/sensor/status
+    ```
+
+    and has the following structure:
+
+    ```json
+    {
+        "time" : time,
+        "pressure" : pressure,
+        "temperature" : {
+            "from_humidty" : temperature,
+            "from_pressure" : temperature
+        },
+        "humidity" : humidity,
+        "gyroscope" : {
+            "pytch" : gyroscope,
+            "roll" : gyroscope,
+            "yaw" : gyroscope
+        },
+        "compass" : {
+            "north" : compass_north
+        },
+        "acceleration" : {
+            "x" : acceleration,
+            "y" : acceleration,
+            "z" : acceleration
+        },
+    }
+
+    ```
+
+- The payload of the **joystick** connection is published to the following subtopic `joystick/status`, as follows:
+
+    ```mqtt
+    downstairs/livingroom/sensehat01/joystick/status
+    ```
+
+    and has the following structure:
+
+    ```json
+    {
+        "direction" : direction
+    }
+    ```
+
+- Finally, the **LED** connection subscribes to the following subtopic `led/cmd`, as follows:
+
+    ```mqtt
+    downstairs/livingroom/sensehat01/led/cmd
+    ```
+
+    and it consumes payloads with the following structure:
+
+    ```json
+    {
+        "led_method" : {
+            "arg1" : value1,
+            "arg2" : value2,
+            "argN" : valueN,
+        }
+    }
+    ```
+
+    in which `led_method` is the name of a valid [LED matrix setter method of a SenseHat object](https://pythonhosted.org/sense-hat/api/#led-matrix) (e.g., `"show_message"`); the various `"arg"` keys are the name of valid arguments (`text_string`, `text_colour`); and `value` is the value that each argument should be set to (`"Hello!"`, `[255,0,0]`).  This is organized in such a way because the logic will check whether the `led_method` is valid and then pass its value as `**kwargs` to the method.
+
+    Of note, the payload can contain more than one method as well:
+
+    ```json
+    {
+        "led_method1" : {
+            "arg1" : value1,
+        },
+        "led_method2" : {
+            "arg1" : value1,
+            "arg2" : value2
+        }
+    }
+    ```
 
 [top](#table-of-contents)
 
@@ -130,7 +254,7 @@ If the service is up and running, you are all set here.
 
 ## Log Rotation
 
-The `rpi_sensehat_mqtt.py` script stores log messages in the `logs/rpi_sensehat_mqtt.log` file and if unchcked, such a file will grow forever. You can always manually remove old entries but this is best done by making use of your OS log rotation utility, namely [`logrotate`](https://linux.die.net/man/8/logrotate). To do so, follow the steps next: 
+The `rpi_sensehat_mqtt.py` script stores log messages in the `logs/rpi_sensehat_mqtt.log` file and if unchcked, such a file will grow forever. You can always manually remove old entries but this is best done by making use of your OS log rotation utility, namely [`logrotate`](https://linux.die.net/man/8/logrotate). To do so, follow the steps next:
 
 1. (Optional.) Edit the preconfigured logrotate file to your liking. Of note, if you're not following the guide here and placed the log files elsewhere, make sure to point to their correct location in the logrotate file.
 
