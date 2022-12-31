@@ -231,6 +231,8 @@ As outlined before, the application creates three independent connections with t
     ```
     <p align="center"><img src="assets/sensehat_load_image.png" width="50%"></p>
 
+    (I also made other 8x8 pixels battery states in `assets/battery/` if you feel like using.)
+
 [top](#table-of-contents)
 
 ## Run as a Service
