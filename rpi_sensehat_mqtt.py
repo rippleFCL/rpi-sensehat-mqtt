@@ -2,7 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-This scripts reads sensors from the SenseHAT and publishes them on an MQTT broker.
+This script contains the main logic of the rpi-sensehat-mqtt project.
+Edit the 'CONFIG.ini' configuration file before running it. Refer to
+the documentation to learn how to use the application using either
+a physical SenseHAT or a virtual one.
+
 Author: @cgomesu
 Repo: https://github.com/cgomesu/rpi-sensehat-mqtt
 """
@@ -19,7 +23,7 @@ from signal import signal, SIGINT, SIGHUP, SIGTERM, pause
 import sys
 import threading
 
-# start a loggin instance for this module using constants
+# start a logging instance for this module using constants
 logging.basicConfig(filename=const.LOG_FILENAME, format=const.LOG_FORMAT, datefmt=const.LOG_DATEFMT)
 logger = logging.getLogger(__name__)
 logger.setLevel(const.LOG_LEVEL)
@@ -112,7 +116,6 @@ def stop(signum, frame=None):
 def main():
     # startup procedure to trap INT, HUP, TERM signals
     start(SIGINT, SIGHUP, SIGTERM)
-    # TODO: catch exceptions in object initialization and loop logic
     # create a config object
     global config
     try:
