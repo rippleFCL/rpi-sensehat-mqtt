@@ -220,6 +220,17 @@ As outlined before, the application creates three independent connections with t
     }
     ```
 
+    Here is an example of payload consumed by the LED client and what it displays on the LED matrix as a result:
+
+    ```json
+    {
+        "load_image" : {
+            "file_path" : "/home/pi/rpi-sensehat-mqtt/assets/battery/battery-75.png",
+        }
+    }
+    ```
+    <p align="center"><img src="assets/sensehat_load_image.png" width="50%"></p>
+
 [top](#table-of-contents)
 
 ## Run as a Service
