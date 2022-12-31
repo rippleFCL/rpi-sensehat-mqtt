@@ -1,3 +1,8 @@
-test
-tmp
+# Ignore these dirs
+test/
+tmp/
+__pycache__/
 
+# Ignore these files
+
+# Ignore these extensions

@@ -1,152 +1,182 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# This scripts reads sensors from SenseHAT and streams them on MQTT
 
-from sense_hat import SenseHat
+"""
+This scripts reads sensors from the SenseHAT and publishes them on an MQTT broker.
+Author: @cgomesu
+Repo: https://github.com/cgomesu/rpi-sensehat-mqtt
+"""
+
+# local imports
+import src.constants as const
+import src.errors as err
+import src.utils as utils
+import src.mqtt as mqtt
+import src.sensehat as sensehat
+# external imports
 import logging
-import os
-import paho.mqtt.client as mqtt
-import uuid
-import json
-from rfc3986 import urlparse
-import signal
-from threading import Event
-import socket
-import time
+from signal import signal, SIGINT, SIGHUP, SIGTERM, pause
+import sys
+import threading
 
+# start a loggin instance for this module using constants
+logging.basicConfig(filename=const.LOG_FILENAME, format=const.LOG_FORMAT, datefmt=const.LOG_DATEFMT)
+logger = logging.getLogger(__name__)
+logger.setLevel(const.LOG_LEVEL)
+logger.debug("Initilized a logger object.")
 
-class RpiSenseHatMqtt:
-    """Main app."""
+# methods for sense object threads
+def streaming_sensor():
+    logger.info("Starting sensor publishing loop.")
+    while not stop_streaming.is_set():
+        logger.debug("Updating and publishing sensor data.")
+        mqtt_pub_sensor.publish(sense_sensor.sensors_data())
+        logger.debug(f"Waiting for signal or timeout ({config.resolution}).")
+        stop_streaming.wait(config.resolution)
+        if not stop_streaming.is_set():
+            logger.warning(f"Reached wait timeout.")
 
-    def __init__(self):
-        """Init RpiSenseHatMqtt class."""
-        self.logger = logging.getLogger('rpi_sensehat_mqtt.RpiSenseHatMqtt')
-        self.initialized = False
-        topic_prefix = os.environ.get('RPI_SENSEHAT_MQTT_TOPIC_PREFIX', "sensehat")
-        self.topic_prefix = topic_prefix if topic_prefix.endswith("/") else (topic_prefix + "/")
-        self.logger.info("Begin initialize class RpiSenseHatMqtt")
-        self.logger.debug("Capturing signals")
-        signal.signal(signal.SIGINT, self.cleanup)
-        signal.signal(signal.SIGTERM, self.cleanup)
-        self.broker_url = None
-        self.broker_port = None
-        self.broker_user = None
-        if not self._validate_info(
-                os.environ.get('RPI_SENSEHAT_MQTT_BROKER', "mqtt://test.mosquitto.org:1883")
-        ):
-            self.logger.error("Broker information not valid")
-        else:
-            self.logger.info("Initialize MQTT")
-            self.mqtt_client = mqtt.Client(client_id=str(uuid.uuid4()))
-            self.mqtt_client.on_connect = self._on_connect
-            self.mqtt_client.on_message = self._on_message
-            self.mqtt_client.on_publish = self._on_publish
-            self.hostname = socket.gethostname()
-            self.location = os.environ.get('RPI_SENSEHAT_MQTT_LOCATION', "studio")
-            self.measurement = os.environ.get('RPI_SENSEHAT_MQTT_MEASUREMENT', "environment")
+def streaming_led():
+    logger.info("Starting LED message loop.")
+    while not stop_streaming.is_set():
+        if not mqtt_sub_led.messages.empty():
+            logger.debug("Received a payload. Parsing it.")
+            try:
+                payload = mqtt_sub_led.decoded_message()
+            except err.MqttDecodingError as mderr:
+                logger.warning(f"Could not decode mqtt message. Skipping it. Error: {mderr.error}")
+                continue
+            logger.debug(f"Decoded payload: '{payload}'")
+            if not isinstance(payload, dict):
+                logger.warning(f"The payload is not a dictionary. Skipping it.")
+                continue
+            # payload should be in {'method' : [**kwargs]} format
+            for f in payload.keys():
+                f_kwargs = payload[f] if payload[f] else {}
+                try:
+                    # https://pythonhosted.org/sense-hat/api/#led-matrix
+                    # if a valid setter, call with kwargs; else, log and skip.
+                    if f=='set_rotation': sense_led.sense.set_rotation(**f_kwargs)
+                    elif f=='flip_h': sense_led.sense.flip_h(f_kwargs)
+                    elif f=='flip_v': sense_led.sense.flip_v(f_kwargs)
+                    elif f=='set_pixels': sense_led.sense.set_pixels(**f_kwargs)
+                    elif f=='set_pixel': sense_led.sense.set_pixel(**f_kwargs)
+                    elif f=='load_image': sense_led.sense.load_image(**f_kwargs)
+                    elif f=='clear': sense_led.sense.clear(**f_kwargs)
+                    elif f=='show_message': sense_led.sense.show_message(**f_kwargs)
+                    elif f=='show_letter': sense_led.sense.show_letter(**f_kwargs)
+                    elif f=='wait': stop_streaming.wait(f_kwargs)
+                    else: logger.warning(f"The method '{f}' in the payload '{payload}' is not supported.")
+                except TypeError as terr:
+                    logger.info(f"Unable to call '{f}' with args '{f_kwargs}': {terr}")
+            # wait a second before displaying any new messages from the mqtt topic
+            stop_streaming.wait(1)
 
-            self.logger.info("Initialize SenseHAT")
-            self.sense = SenseHat()
-            self.sense.clear()
-            self.streaming_cycle = int(os.environ.get('RPI_SENSEHAT_MQTT_CYCLE', 60))
-            self.streaming_exit = Event()
+def streaming_joystick():
+    logger.info("Starting joystick directions loop.")
+    while not stop_streaming.is_set():
+        logger.debug(f"Waiting for joystick directions.")
+        # pass stop_streaming flag to prevent locks in wait_directions method
+        sense_joystick.wait_directions(stop_streaming)
+        if not sense_joystick.directions.empty():
+            logger.debug(f"A joystick direction was detected. Publishing direction from queue.")
+            mqtt_pub_joystick.publish(sense_joystick.joystick_data())
 
-            self.initialized = True
-            self.sense.show_message(os.environ.get('RPI_SENSEHAT_MQTT_WELCOME', "Loaded!"))
-            self.sense.low_light = True
-            self.logger.info("Done initialize class RpiSenseHatMqtt")
+# methods of the main logic
+def start(*signals):
+    logger.info("Starting service.")
+    # trap signals from args using stop function as handler
+    for s in signals: signal(s, stop)
+    # global lists of objects
+    global senses, mqtts, threads
+    senses = []
+    mqtts = []
+    threads = []
+    # thread helpers
+    global stop_streaming
+    stop_streaming = threading.Event()
 
-    def cleanup(self, signum, frame):
-        self.logger.info("Cleanup")
-        self.streaming_exit.set()
-        if not self.initialized:
-            return None
-        if self.mqtt_client.is_connected():
-            self.mqtt_client.disconnect()
-            self.mqtt_client.loop_stop()
+def stop(signum, frame=None):
+    logger.info(f"Received a signal '{signum}' to stop.")
+    # cleanup procedures
+    stop_streaming.set()
+    # disconnect and stop threads
+    for m in mqtts:
+        if m.is_enabled: m.disable()
+    # turn off sensehat led and so on
+    for s in senses:
+        if s.is_enabled: s.disable()
+    # exit the application
+    sys.exit(signum)
 
-    def _validate_info(self, broker_info):
-        self.logger.debug("Validating " + broker_info)
-        parseduri = urlparse(broker_info)
-        if not (parseduri.scheme in ["mqtt", "ws"]):
-            return False
-        self.broker_url = parseduri.host
-        self.broker_port = parseduri.port
-        self.broker_user = parseduri.userinfo
-        self.logger.debug("broker_user {}".format(self.broker_user))
-        self.logger.debug("broker_url {}, broker_port: {}".format(self.broker_url, self.broker_port))
-        if not (self.broker_url and self.broker_port):
-            return False
-        return True
-
-    def _on_connect(self, client, userdata, flags, rc):
-        self.logger.info("Connected with result code " + str(rc))
-        self.mqtt_client.subscribe(self.topic_prefix + "commands")
-
-    def _on_message(self, client, userdata, msg):
-        self.logger.debug(msg.topic + " " + str(msg.payload))
-        if msg.topic in [self.topic_prefix + "commands"]:
-            command = json.loads(msg.payload)
-            if 'ledwall' in command.keys():
-                self.logger.debug("Writing message on the LedWall: {}".format(command["ledwall"]))
-                self.sense.show_message(command["ledwall"])
-
-    def _on_publish(self, client, userdata, result):
-        pass
-
-    def connect(self):
-        if self.initialized and self.broker_url and self.broker_port:
-            self.logger.debug("{}:{}".format(self.broker_url, self.broker_port))
-            self.mqtt_client.connect(self.broker_url, self.broker_port, 30)
-
-    def _stream_sensors(self):
-        while not self.streaming_exit.is_set():
-            js_on_message = self._read_sensors()
-            js_on_message["measurement"] = self.measurement
-            js_on_message["source"] = self.hostname
-            js_on_message["location"] = self.location
-            js_on_message = json.dumps(js_on_message)
-            self.logger.debug("js_on_message {}".format(js_on_message))
-            self.mqtt_client.publish(self.topic_prefix + "readings", payload=js_on_message, qos=0, retain=False)
-            self.streaming_exit.wait(self.streaming_cycle)
-
-    def _read_sensors(self):
-        sensor_reading = {
-            "time": int(round(time.time() * 1000)),
-            "pressure": round(self.sense.get_pressure(), 3),
-            "temperature": {
-                "01": round(self.sense.get_temperature(), 3),
-                "02": round(self.sense.get_temperature_from_pressure(), 3),
-            },
-            "humidity": round(self.sense.get_humidity(), 3),
-            "acceleration": {
-                "x": round(self.sense.get_accelerometer_raw().get("x") * 9.80665, 3),
-                "y": round(self.sense.get_accelerometer_raw().get("y") * 9.80665, 3),
-                "z": round(self.sense.get_accelerometer_raw().get("z") * 9.80665, 3),
-            }
-        }
-        return sensor_reading
-
-    def start(self):
-        if not self.initialized:
-            return None
-        self.mqtt_client.loop_start()
-        self._stream_sensors()
-
-
-logging.basicConfig(
-    filename='/var/log/rpi_broadcaster/rpi_sensehat_mqtt.log',
-    format='%(asctime)s.%(msecs)03d %(levelname)s\t[%(name)s] %(message)s',
-    datefmt='%Y-%m-%dT%H:%M:%S'
-)
-logger = logging.getLogger("rpi_sensehat_mqtt")
-logger.setLevel(os.environ.get('RPI_SENSEHAT_MQTT_LOGLEVEL', logging.DEBUG))
+def main():
+    # startup procedure to trap INT, HUP, TERM signals
+    start(SIGINT, SIGHUP, SIGTERM)
+    # TODO: catch exceptions in object initialization and loop logic
+    # create a config object
+    global config
+    try:
+        config = utils.Configuration()
+    except err.InvalidConfigFile as cferr:
+        logger.info(f"Unable to load settings because the config file does not exist: {cferr.path_file}.")
+        stop(1)
+    except err.ConfigParseError as cperr:
+        logger.info(f"Unable to parse settings in the config file: {cperr.error}.")
+        stop(1)
+    except err.InvalidConfigAttr as caerr:
+        logger.info(f"Check your config file. There's an invalid attribute: {caerr.attribute}.")
+        stop(1)
+    # create sensehat objects
+    global sense_sensor, sense_led, sense_joystick
+    sense_sensor = sensehat.SenseHatSensor(rounding=config.sensehat_rounding,
+        acceleration_multiplier=config.sensehat_acceleration_multiplier,
+        gyroscope_multiplier=config.sensehat_gyroscope_multiplier)
+    sense_led = sensehat.SenseHatLed(low_light=config.sensehat_low_light)
+    sense_joystick = sensehat.SenseHatJoystick()
+    senses.extend([sense_sensor, sense_led, sense_joystick])
+    # create mqtt objects
+    global mqtt_pub_sensor, mqtt_sub_led, mqtt_pub_joystick
+    try:
+        mqtt_pub_sensor = mqtt.MqttClientPub(broker_address=config.mqtt_broker_address,
+            zone=config.mqtt_zone,
+            room=config.mqtt_room,
+            client_name=config.mqtt_client_name,
+            type='sensor',
+            client_id=f"{config.mqtt_client_name}_sensor",
+            user=config.mqtt_user,
+            password=config.mqtt_password)
+        mqtt_sub_led = mqtt.MqttClientSub(broker_address=config.mqtt_broker_address,
+            zone=config.mqtt_zone,
+            room=config.mqtt_room,
+            client_name=config.mqtt_client_name,
+            type='led',
+            client_id=f"{config.mqtt_client_name}_led",
+            user=config.mqtt_user,
+            password=config.mqtt_password)
+        mqtt_pub_joystick = mqtt.MqttClientPub(broker_address=config.mqtt_broker_address,
+            zone=config.mqtt_zone,
+            room=config.mqtt_room,
+            client_name=config.mqtt_client_name,
+            type='joystick',
+            client_id=f"{config.mqtt_client_name}_joystick",
+            user=config.mqtt_user,
+            password=config.mqtt_password)
+        mqtts.extend([mqtt_pub_sensor, mqtt_sub_led, mqtt_pub_joystick])
+    except err.InvalidMqttAttr as maerr:
+        logger.info(f"Check your config becayse the following MQTT attribute is invalid: '{maerr.attribute}'")
+        stop(1)
+    # thread handlers
+    thread_sensor = threading.Thread(target=streaming_sensor)
+    thread_led = threading.Thread(target=streaming_led)
+    thread_joystick = threading.Thread(target=streaming_joystick)
+    threads.extend([thread_sensor, thread_led, thread_joystick])
+    # finished setting up, then print welcome message if set (this blocking)
+    if config.welcome_msg: sense_led.sense.show_message(config.welcome_msg)
+    # start threads and wait for interrupt signal in this one
+    logger.debug(f"Starting threads '{threads}'.")
+    for t in threads: t.start()
+    logger.info(f"Main thread is done. Waiting for interrupt.")
+    pause()
 
 if __name__ == "__main__":
-    # Start RpiSenseHatMqtt app
-    logger.info("Starting RpiSenseHatMqtt service")
-    root = RpiSenseHatMqtt()
-    root.connect()
-    logger.info("Run main loop - wait for stop signal")
-    root.start()
-    logger.info("Stopping main loop")
+    main()

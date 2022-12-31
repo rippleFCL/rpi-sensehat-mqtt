@@ -1,9 +1,0 @@
-/var/log/rpi_broadcaster/rpi_sensehat_mqtt.log
-{
-    rotate 3
-    weekly
-    maxsize 1M
-    compress
-    missingok
-    notifempty
-}

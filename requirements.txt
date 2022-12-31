@@ -1,2 +1,3 @@
-paho-mqtt~=1.5.1
-rfc3986~=1.4.0
+sense-hat ~= 2.4
+sense-emu ~= 1.1
+paho-mqtt ~= 1.6
