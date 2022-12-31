@@ -12,7 +12,7 @@ Of note, the project is a fork of [mirkodcompataretti's rpi-sense-hat](https://g
     <img src="assets/concept.png" width="50%">
 </p>
 
-That is, the `rpi-sensehat-mqtt` application publishes **sensor** and **joystick** data to the MQTT broker to be consumed by a home automation server (e.g., [Home Assistant](https://www.home-assistant.io/)). In addition, it also subcribes to an **LED** topic to display payloads published to the broker. For instance, when an homr automation publishes a message to the LED topic, the SenseHAT will consume it and display it on the LED matrix.
+That is, the `rpi-sensehat-mqtt` application publishes **sensor** and **joystick** data to the MQTT broker to be consumed by a home automation server (e.g., [Home Assistant](https://www.home-assistant.io/)). In addition, it also subcribes to an **LED** topic to display payloads published to the broker. For instance, when an home automation publishes a message to the LED topic, the SenseHAT will consume it and display on the LED matrix.
 
 ## Table of Contents
 
