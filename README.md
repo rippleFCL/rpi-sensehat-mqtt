@@ -78,23 +78,7 @@ For the installation procedure, it is assumed that your Raspberry Pi is running 
     nano CONFIG.ini
     ```
 
-1. If everything is looking good, you can try running the main script.  However, it won't output meaningful on the terminal. All messages are logged into `logs/rpi_sensehat_mqtt.log`. So, open another terminal and make it follow new messages added to the log file:
-
-    ```sh
-    tail -f ~/rpi-sensehat-mqtt/logs/rpi_sensehat_mqtt.log
-    ```
-
-    Then, go back to the previous terminal and run the main script:
-
-    ```sh
-    ./rpi_sensehat_mqtt.py
-    ```
-
-    As mentioned, you should not notice anything on the terminal if the application is running as intended. However, your SenseHAT should disaply the `welcome_message` once it has initialized.  If the application closes without you sending an interrupt signal (e.g., `ctrl+c`), there's likely a configuration issue.  Check the log messages to learn about what the script is doing and any error messages.  By default, it will only store `INFO` level messages.  If you need a more verbose log, edit `LOG_LEVEL` to `'DEBUG'` instead.
-
-1. Once you got the application running successfully, take a look at [Run as a Service](#run-as-a-service) and [Log Rotation](#log-rotation) to make it run automatically in the background and have your OS manage the log file.
-
-You should be all set at this point. So, head to [Usage](#usage) to learn the specifics about how to interface with the SenseHAT via MQTT.
+You should be all set at this point. Head to [Usage](#usage) to learn the specifics about how to run the main logic and interface with the SenseHAT via MQTT.
 
 [top](#table-of-contents)
 
@@ -112,7 +96,17 @@ The main script can be executed in two ways, namely by using the shebang or call
 python3 rpi_sensehat_mqtt.py
 ```
 
-To run the script in the background, refer to the [Run as a Service](#run-as-a-service) section.
+However, if you run the main script from the CLI, you might notice that it won't output any meaningful messages there. Instead, all messages are logged into `logs/rpi_sensehat_mqtt.log`. So, if this is the first time running the script or you are still configuring its options, then open another terminal and make it follow new messages added to the log file whil you run the main logic:
+
+```sh
+tail -f ~/rpi-sensehat-mqtt/logs/rpi_sensehat_mqtt.log
+```
+
+Then, go back to the previous terminal and run the main script. Your SenseHAT should disaply the `welcome_message` on the LED matrix once it has initialized.
+
+If the application closes without you sending an interrupt signal (e.g., `ctrl+c`), there's likely a configuration issue.  Check the log messages to learn about what the script is doing and any error messages.  By default, it will only store `INFO` level messages.  If you need a more verbose log, edit `LOG_LEVEL` to `'DEBUG'` instead.
+
+Once you get the application running successfully, take a look at [Run as a Service](#run-as-a-service) and [Log Rotation](#log-rotation) to make it run automatically in the background and have your OS manage the log file. The specifics about the MQTT payloads are described next.
 
 ### MQTT
 
@@ -231,7 +225,7 @@ As outlined before, the application creates three independent connections with t
     ```
     <p align="center"><img src="assets/sensehat_load_image.png" width="50%"></p>
 
-    (I also made other 8x8 pixels battery states in `assets/battery/` if you feel like using.)
+    (Other battery states I made are in `assets/battery/`. Check `assets/pixel_art/` for addtional images that can be displayed on the LED matrix.)
 
 [top](#table-of-contents)
 
