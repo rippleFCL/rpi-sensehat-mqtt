@@ -75,7 +75,7 @@ def streaming_led():
                     logger.info(f"Unable to call '{f}' with args '{f_kwargs}': {terr}")
                 except Exception as oerr:
                     # catch other exceptions that might propagate from SenseHat methods
-                    logger.warn(f"There was a non-specific error running method '{f}': {oerr}")
+                    logger.warning(f"There was a non-specific error running method '{f}': {oerr}")
             # wait a second before displaying any new messages from the mqtt topic
             stop_streaming.wait(1)
 
