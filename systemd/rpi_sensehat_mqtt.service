@@ -9,8 +9,9 @@ Type=simple
 # User must match folder permission and user with the required Python packages
 User=pi
 #Group=GROUP
-# Edit the full path to the Python script if different than default
-ExecStart=/usr/bin/python3 /home/pi/rpi-sensehat-mqtt/rpi_sensehat_mqtt.py
+# Edit paths if different than default
+WorkingDirectory = /home/pi/rpi-sensehat-mqtt/
+ExecStart=/usr/bin/python3 rpi_sensehat_mqtt.py
 # Restart options
 Restart=always
 RestartSec=15
