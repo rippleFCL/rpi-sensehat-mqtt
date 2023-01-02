@@ -305,14 +305,6 @@ mqtt:
         {{ value_json.temperature.from_humidity }}
 ```
 
-However, unless you want to fully customize your integration, it's much easier to use the built-in [MQTT discovery](https://www.home-assistant.io/integrations/mqtt/#discovery-messages) feature.  To do so, you must pass the option `-d` when running `rpi_sensehat_mqtt.py`, as follows:
-
-```sh
-./rpi_sensehat_mqtt.py -d
-```
-
-This will make `rpi_sensehat_mqtt.py` send discovery messages to HASS that will automatically configure the **sensors** and **joystick** devices of your SenseHAT.
-
 Interacting with the **led** device, however, is a little bit more complicated because you need to configure HASS to send specific payloads (see [Usage](#usage)). This is best done by first writing [Scripts](https://www.home-assistant.io/integrations/script/) in your HASS instance that make use of the `mtqq.publish` service.  Then, whenever customizing your dashboard or automation, you can call such scripts to publlish the desired payloads.  Here is an example of script to turn off the LED matrix:
 
 ```yaml
@@ -328,6 +320,8 @@ script:
             {"clear" : ""}
           retain: false
 ```
+
+Now you can call the `sensehat_led_clear` script from within your HASS dashboard (or via an automation) in order to clear the LED matrix on the SenseHAT.
 
 [top](#table-of-contents)
 
