@@ -1,16 +1,12 @@
 # rpi-sensehat-mqtt
 
-This a Python application for the [Raspberry Pi](https://www.raspberrypi.com) (RPi) that allows interfacing with the [SenseHAT](https://www.raspberrypi.com/products/sense-hat/) over [MQTT](https://en.wikipedia.org/wiki/MQTT). 
+This a Python application for the [Raspberry Pi](https://www.raspberrypi.com) (RPi) that allows interfacing with the [SenseHAT](https://www.raspberrypi.com/products/sense-hat/) over [MQTT](https://en.wikipedia.org/wiki/MQTT).
 
-<p align="center">
-    <img src="assets/rpi_sensehat.png" width="60%">
-</p>
+<p align="center"><img src="assets/rpi_sensehat.png" width="70%"></p>
 
 Of note, the project is a fork of [mirkodcompataretti's rpi-sense-hat](https://github.com/mirkodcomparetti/rpi-sensehat_mqtt) that ended up being heavily modified to reflect my own idea of implementation, which can be illustrated as follows:
 
-<p align="center">
-    <img src="assets/concept.png" width="50%">
-</p>
+<p align="center"><img src="assets/concept.png" width="50%"></p>
 
 That is, the `rpi-sensehat-mqtt` application publishes **sensor** and **joystick** data to the MQTT broker to be consumed by a home automation server (e.g., [Home Assistant](https://www.home-assistant.io/)). In addition, it also subcribes to an **LED** topic to display payloads published to the broker. For instance, when an home automation publishes a message to the LED topic, the SenseHAT will consume it and display on the LED matrix.
 
@@ -43,7 +39,7 @@ For the installation procedure, it is assumed that your Raspberry Pi is running 
 1. Test the `sense-hat` installation by running one or more of the Python demos at `/usr/src/sense-hat/examples/python-sense-hat` (press `ctrl+c` to stop):
 
     ```sh
-    ./usr/src/sense-hat/examples/python-sense-hat/rainbow.py
+    python3 /usr/src/sense-hat/examples/python-sense-hat/rainbow.py
     ```
 
 1. (Optional.) [Callibrate the magnetometer](https://www.raspberrypi.com/documentation/accessories/sense-hat.html#calibration). This will install *many* additional packages and will take some time to complete.
@@ -223,6 +219,7 @@ As outlined before, the application creates three independent connections with t
         }
     }
     ```
+
     <p align="center"><img src="assets/sensehat_load_image.png" width="50%"></p>
 
     (Other battery states I made are in `assets/battery/`. Check `assets/pixel_art/` for addtional images that can be displayed on the LED matrix.)
@@ -277,6 +274,60 @@ The `rpi_sensehat_mqtt.py` script stores log messages in the `logs/rpi_sensehat_
     ```
 
 That is it. The log file should be rotated automatically during the next logrotate run--this is usually done automatically by your OS.
+
+[top](#table-of-contents)
+
+## Home Automation Integration
+
+In this section, I described how to integrate `rpi-sensehat-mqtt` with a few home automation applications.
+
+### Home Assistant
+
+In [Home Assistant](https://www.home-assistant.io/) (HASS), there are [many ways to integrate with MQTT devices](https://www.home-assistant.io/integrations/mqtt/).  For [manual MQTT integrations](https://www.home-assistant.io/integrations/mqtt/#manual-configured-mqtt-items), one must edit the `configuration.yaml` file to add new `mqtt:` YAML entries for the device. To illustrate, we can create a new sensor entity for *pressure* and *temperature from humidity* by adding the following to the HASS `configuration.yaml`:
+
+```yaml
+# Example configuration.yaml entry
+mqtt:
+  sensor:
+    - name: "SenseHAT - Pressure"
+      state_class: measurement
+      device_class: pressure
+      state_topic: "downstairs/livingroom/sensehat01/sensor/status"
+      unit_of_measurement: "hPa"
+      value_template: |-
+        {{ value_json.pressure }}
+    - name: "SenseHAT - Temperature"
+      state_class: measurement
+      device_class: temperature
+      state_topic: "downstairs/livingroom/sensehat01/sensor/status"
+      unit_of_measurement: "°C"
+      value_template: |-
+        {{ value_json.temperature.from_humidity }}
+```
+
+However, unless you want to fully customize your integration, it's much easier to use the built-in [MQTT discovery](https://www.home-assistant.io/integrations/mqtt/#discovery-messages) feature.  To do so, you must pass the option `-d` when running `rpi_sensehat_mqtt.py`, as follows:
+
+```sh
+./rpi_sensehat_mqtt.py -d
+```
+
+This will make `rpi_sensehat_mqtt.py` send discovery messages to HASS that will automatically configure the **sensors** and **joystick** devices of your SenseHAT.
+
+Interacting with the **led** device, however, is a little bit more complicated because you need to configure HASS to send specific payloads (see [Usage](#usage)). This is best done by first writing [Scripts](https://www.home-assistant.io/integrations/script/) in your HASS instance that make use of the `mtqq.publish` service.  Then, whenever customizing your dashboard or automation, you can call such scripts to publlish the desired payloads.  Here is an example of script to turn off the LED matrix:
+
+```yaml
+# Example configuration.yaml entry
+script:
+  sensehat_led_clear:
+    alias: 
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "downstairs/livingroom/sensehat01/led/cmd"
+          payload: |-
+            {"clear" : ""}
+          retain: false
+```
 
 [top](#table-of-contents)
 
