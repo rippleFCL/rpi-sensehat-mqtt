@@ -16,6 +16,7 @@ That is, the `rpi-sensehat-mqtt` application publishes **sensor** and **joystick
 1. [Usage](#usage)
 1. [Run as a Service](#run-as-a-service)
 1. [Log Rotation](#log-rotation)
+1. [Home Automation](#home-automation)
 1. [Emulator](#emulator)
 1. [Related Docs](#related-docs)
 
@@ -277,7 +278,7 @@ That is it. The log file should be rotated automatically during the next logrota
 
 [top](#table-of-contents)
 
-## Home Automation Integration
+## Home Automation
 
 In this section, I described how to integrate `rpi-sensehat-mqtt` with a few home automation applications.
 
