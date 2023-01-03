@@ -26,7 +26,7 @@ This application can be installed in two non-exclusive ways. In the first and mo
 
 For the installation procedure, it is assumed that your Raspberry Pi is running the latest version of the [Raspberry Pi OS](https://www.raspberrypi.com/software/) but the instructions might be compatible with similar distributions for the RPi. To install and use `rpi-sensehat-mqtt`, follow the procedures detailed next:
 
-1. If you have not attached the SenseHAT to the RPi yet, go ahead and turn off your RPi and attach the SenseHAT to it. Then, log into the CLI of your RPi using your standard user (e.g., `pi`) or if running a desktop environment, open a terminal.
+1. If you have not attached the SenseHAT to the RPi yet, go ahead and turn off your RPi and attach the SenseHAT to it.  It is strongly recommended to use a [male-to-female, 40-pin GPIO extension cable](https://duckduckgo.com/?q=rpi+40-pin+gpio+extension+cable) to connect your SenseHAT to the RPi; otherwise, sensor data **will be unreliable** due to the close proximity to the RPi, which has multiple heat sources (e.g., CPU). Then, log into the CLI of your RPi using your standard user (e.g., `pi`) or if running a desktop environment, open a terminal.
 
 1. Run the commands below to install the `sense-hat` package and other packages we will need. Make sure that `I2C` was enabled afterwards; Otherwise, run `sudo raspi-config` and manually turn it on in the `Interfaces` section of the utility.  You will need to reboot your RPi for the changes to take effect.
 
@@ -266,6 +266,34 @@ The `rpi_sensehat_mqtt.py` script stores log messages in the `logs/rpi_sensehat_
     ```sh
     cd ~/rpi-sensehat-mqtt/logrotate.d/
     nano rpi_sensehat_mqtt
+    ```
+
+1. (Optional.) Test your logrotate cofiguration file:
+
+    ```sh
+    logrotate -d rpi_sensehat_mqtt
+    ```
+
+    which should print something like this:
+
+    ```sh
+    WARNING: logrotate in debug mode does nothing except printing debug messages!  Consider using verbose mode (-v) instead if this is not what you want.
+
+    reading config file ../logrotate.d/rpi_sensehat_mqtt
+    Reading state from file: /var/lib/logrotate/status
+    error: error opening state file /var/lib/logrotate/status: Permission denied
+    Allocating hash table for state file, size 64 entries
+
+    Handling 1 logs
+
+    rotating pattern: /home/pi/rpi-sensehat-mqtt/logs/rpi_sensehat_mqtt.log
+    weekly (3 rotations)
+    empty log files are not rotated, log files >= 1048576 are rotated earlier, old logs are removed
+    considering log /home/pi/rpi-sensehat-mqtt/logs/rpi_sensehat_mqtt.log
+    Creating new state
+    Now: 2023-01-03 11:39
+    Last rotated at 2023-01-03 11:00
+    log does not need rotating (log has already been rotated)
     ```
 
 1. Copy the logrotate file to the directory monitored by `logrotate` (this requires `root` permission):
