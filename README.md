@@ -147,7 +147,7 @@ As outlined before, the application creates three independent connections with t
         },
         "humidity" : "humidity_value",
         "gyroscope" : {
-            "pytch" : "pytch_value",
+            "pitch" : "pitch_value",
             "roll" : "roll_value",
             "yaw" : "yaw_value"
         },
@@ -296,10 +296,10 @@ The `rpi_sensehat_mqtt.py` script stores log messages in the `logs/rpi_sensehat_
     log does not need rotating (log has already been rotated)
     ```
 
-1. Copy the logrotate file to the directory monitored by `logrotate` (this requires `root` permission):
+1. Create a symlink of logrotate file to the directory monitored by `logrotate` (this requires `root` permission):
 
     ```sh
-    sudo cp ./rpi_sensehat_mqtt /etc/logrotate.d/
+    sudo ln -s "$(pwd)"/rpi_sensehat_mqtt /etc/logrotate.d/rpi_sensehat_mqtt
     ```
 
 That is it. The log file should be rotated automatically during the next logrotate run--this is usually done automatically by your OS.
