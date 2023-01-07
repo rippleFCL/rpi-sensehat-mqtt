@@ -137,7 +137,8 @@ def main():
     sense_sensor = sensehat.SenseHatSensor(rounding=config.sensehat_rounding,
         acceleration_multiplier=config.sensehat_acceleration_multiplier,
         gyroscope_multiplier=config.sensehat_gyroscope_multiplier)
-    sense_led = sensehat.SenseHatLed(low_light=config.sensehat_low_light)
+    sense_led = sensehat.SenseHatLed(set_rotation=config.sensehat_set_rotation,
+        low_light=config.sensehat_low_light)
     sense_joystick = sensehat.SenseHatJoystick()
     senses.extend([sense_sensor, sense_led, sense_joystick])
     # create mqtt objects

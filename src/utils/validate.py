@@ -23,6 +23,9 @@ def broker_url(broker_url:ParseResult):
 def pixels(pixels:list):
     return len(pixels) == 64
 
+def rotation(degrees:int):
+    return 0 <= degrees <= 360
+
 # CONFIGURATION methods
 def file_exists(path_file:str):
     return path.isfile(path=path_file)
