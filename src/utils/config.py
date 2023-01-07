@@ -29,6 +29,7 @@ class Configuration():
     MQTT_ZONE = "downstairs"
     MQTT_ROOM = "livingroom"
     # SENSEHAT
+    SENSEHAT_SET_ROTATION = 0
     SENSEHAT_LOW_LIGHT = True
     SENSEHAT_ROUNDING = 4
     SENSEHAT_ACCELERATION_MULTIPLIER = 9.80665
@@ -53,6 +54,7 @@ class Configuration():
         self.__mqtt_credentials_enabled = False
         self.__mqtt_zone = Configuration.MQTT_ZONE
         self.__mqtt_room = Configuration.MQTT_ROOM
+        self.__sensehat_set_rotation = Configuration.SENSEHAT_SET_ROTATION
         self.__sensehat_low_light = Configuration.SENSEHAT_LOW_LIGHT
         self.__sensehat_rounding = Configuration.SENSEHAT_ROUNDING
         self.__sensehat_acceleration_multiplier = Configuration.SENSEHAT_ACCELERATION_MULTIPLIER
@@ -102,6 +104,9 @@ class Configuration():
             self.mqtt_room = self.__raw_config['mqtt'].get('room', Configuration.MQTT_ROOM)
         
         # SENSEHAT
+        # sensehat_set_rotation
+        if 'sensehat' in self.__raw_config.sections():
+            self.__sensehat_set_rotation = self.__raw_config['sensehat'].getint('set_rotation', Configuration.SENSEHAT_SET_ROTATION)
         # sensehat_low_light
         if 'sensehat' in self.__raw_config.sections():
             self.__sensehat_low_light = self.__raw_config['sensehat'].getboolean('low_light', Configuration.SENSEHAT_LOW_LIGHT)
@@ -173,6 +178,16 @@ class Configuration():
             raise err.InvalidConfigAttr(f"Room '{room}' contains invalid characters.", 'room')
         self.__mqtt_room = room
     
+    @property
+    def sensehat_set_rotation(self):
+        return self.__sensehat_set_rotation
+    @sensehat_set_rotation.setter
+    def sensehat_set_rotation(self, degree):
+        if not val.rotation(degree):
+            logger.info(f"Degree '{degree}' in set_rotation is invalid. Fix config file.")
+            raise err.InvalidConfigAttr(f"Degree '{degree}' in set_rotation is invalid.", 'set_rotation')
+        self.__sensehat_set_rotation = degree
+
     @property
     def sensehat_low_light(self):
         return self.__sensehat_low_light

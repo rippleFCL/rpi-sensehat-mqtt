@@ -127,17 +127,28 @@ class SenseHatLed(SenseHat):
     For more info, see https://pythonhosted.org/sense-hat/api/#led-matrix.
     """
     def __init__(self,
+                set_rotation:int=0,
                 low_light:bool=True):
         super().__init__()
         # LED variables
+        self._set_rotation = set_rotation
         self._low_light = low_light
         # clear LED and init pixels list attribute
         self.sense.clear()
+        self.sense.set_rotation(self.set_rotation)
         # List containing 64 smaller lists of [R, G, B] pixels (red, green, blue)
         # representing the 8x8 LED matrix.
         self._pixels = self.sense.get_pixels()
         self.is_enabled = True
         logger.info(f"A sensehat object for its LED matrix was initialized.")
+
+    @property
+    def set_rotation(self):
+        return self._set_rotation
+    @set_rotation.setter
+    def set_rotation(self, degree:int):
+        self._set_rotation = degree
+        self.sense.set_rotation(self.set_rotation)
 
     @property
     def low_light(self):
