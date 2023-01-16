@@ -296,10 +296,11 @@ The `rpi_sensehat_mqtt.py` script stores log messages in the `logs/rpi_sensehat_
     log does not need rotating (log has already been rotated)
     ```
 
-1. Create a symlink of logrotate file to the directory monitored by `logrotate` (this requires `root` permission):
+1. Create a symlink of logrotate file to the directory monitored by `logrotate` and change the ownership to `root` (this requires `root` permission):
 
     ```sh
     sudo ln -s "$(pwd)"/rpi_sensehat_mqtt /etc/logrotate.d/rpi_sensehat_mqtt
+    sudo chown root rpi_sensehat_mqtt
     ```
 
 That is it. The log file should be rotated automatically during the next logrotate run--this is usually done automatically by your OS.
@@ -334,7 +335,7 @@ mqtt:
         {{ value_json.temperature.from_humidity }}
 ```
 
-Interacting with the **led** device, however, is a little bit more complicated because you need to configure HASS to send specific payloads (see [Usage](#usage)). This is best done by first writing [Scripts](https://www.home-assistant.io/integrations/script/) in your HASS instance that make use of the `mtqq.publish` service.  Then, whenever customizing your dashboard or automation, you can call such scripts to publlish the desired payloads.  Here is an example of script to turn off the LED matrix:
+Interacting with the **led** device, however, is a little bit more complicated because you need to configure HASS to send specific payloads (see [Usage](#usage)). This is best done by first writing [Scripts](https://www.home-assistant.io/integrations/script/) in your HASS instance that make use of the `mqtt.publish` service.  Then, whenever customizing your dashboard or automation, you can call such scripts to publlish the desired payloads.  Here is an example of script to turn off the LED matrix:
 
 ```yaml
 # Example configuration.yaml entry
