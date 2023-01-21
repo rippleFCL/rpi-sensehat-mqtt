@@ -136,6 +136,7 @@ class SenseHatLed(SenseHat):
         # clear LED and init pixels list attribute
         self.sense.clear()
         self.sense.set_rotation(self.set_rotation)
+        self.sense.low_light = self.low_light
         # List containing 64 smaller lists of [R, G, B] pixels (red, green, blue)
         # representing the 8x8 LED matrix.
         self._pixels = self.sense.get_pixels()
