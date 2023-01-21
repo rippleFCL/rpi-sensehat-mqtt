@@ -276,7 +276,7 @@ The `rpi_sensehat_mqtt.py` script stores log messages in the `logs/rpi_sensehat_
 
     which should print something like this:
 
-    ```sh
+    ```txt
     WARNING: logrotate in debug mode does nothing except printing debug messages!  Consider using verbose mode (-v) instead if this is not what you want.
 
     reading config file ../logrotate.d/rpi_sensehat_mqtt
@@ -382,7 +382,7 @@ In `apt` based distros (e.g., Debian, Ubuntu, Rasbperry Pi OS), this can be done
 
 - (Optional.) The command above will only make your user's `.local/bin` dir reachable for the duration of the current session. To permanently add it to your `$PATH`, append the command to your `~/.bashrc` or `~/.profile`.
 
-- Lunch the SenseHAT GUI:
+- Launch the SenseHAT GUI:
 
     ```sh
     sense_emu_gui &
