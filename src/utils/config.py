@@ -200,6 +200,7 @@ class Configuration():
         if not val.rounding(rounding):
             logger.info(f"Rounding cannot be set to '{rounding}. Fix config file.'")
             raise err.InvalidConfigAttr(f"Rounding cannot be set to '{rounding}.", 'rounding')
+        self.__sensehat_rounding = rounding
 
     @property
     def sensehat_acceleration_multiplier(self):
