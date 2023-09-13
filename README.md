@@ -187,27 +187,18 @@ As outlined before, the application creates three independent connections with t
 
     ```json
     {
-        "led_method" : {
-            "arg1" : "value1",
-            "arg2" : "value2",
-            "argN" : "valueN",
-        }
+        "led_method" : [x, y, ...]
     }
     ```
 
-    in which `led_method` is the name of a valid [LED matrix setter method of a SenseHat object](https://pythonhosted.org/sense-hat/api/#led-matrix) (e.g., `"show_message"`); the various `"arg"` keys are the name of valid arguments (`text_string`, `text_colour`); and `value` is the value that each argument should be set to (`"Hello!"`, `[255,0,0]`).  This is organized in such a way because the logic will check whether the `led_method` is valid and then pass its value as `**kwargs` to the method.
+    in which `led_method` is the name of a valid [LED matrix setter method of a SenseHat object](https://pythonhosted.org/sense-hat/api/#led-matrix) (e.g., `"show_message"`) and the list `[x, y, ...]` is a list of parameter values to be passed to such a method (`["Hello!"]`, `[255,0,0]`).  This is organized in such a way because the logic will check whether the `led_method` is valid and then pass its value as `*args` (unnamed expansion) to the method.
 
-    Of note, the payload can contain more than one method as well:
+    Of note, the payload can contain more than one method as well and they will be executed sequentially:
 
     ```json
     {
-        "led_method1" : {
-            "arg1" : "value1",
-        },
-        "led_method2" : {
-            "arg1" : "value1",
-            "arg2" : "value2"
-        }
+        "led_method1" : [],
+        "led_method2" : [x,y,r,g,b]
     }
     ```
 
@@ -215,9 +206,7 @@ As outlined before, the application creates three independent connections with t
 
     ```json
     {
-        "load_image" : {
-            "file_path" : "/home/pi/rpi-sensehat-mqtt/assets/battery/battery-75.png",
-        }
+        "load_image" : ["/home/pi/rpi-sensehat-mqtt/assets/battery/battery-75.png"],
     }
     ```
 
