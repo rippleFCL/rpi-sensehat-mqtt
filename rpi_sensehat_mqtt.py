@@ -54,25 +54,25 @@ def streaming_led():
             if not isinstance(payload, dict):
                 logger.warning(f"The payload is not a dictionary. Skipping it.")
                 continue
-            # payload should be in {'method' : [**kwargs]} format
+            # payload should be in {'method' : [*args]} format
             for f in payload.keys():
-                f_kwargs = payload[f] if payload[f] else {}
+                f_args = payload[f] if payload[f] else []
                 try:
                     # https://pythonhosted.org/sense-hat/api/#led-matrix
                     # if a valid setter, call with kwargs; else, log and skip.
-                    if f=='set_rotation': sense_led.sense.set_rotation(**f_kwargs)
-                    elif f=='flip_h': sense_led.sense.flip_h(f_kwargs)
-                    elif f=='flip_v': sense_led.sense.flip_v(f_kwargs)
-                    elif f=='set_pixels': sense_led.sense.set_pixels(**f_kwargs)
-                    elif f=='set_pixel': sense_led.sense.set_pixel(**f_kwargs)
-                    elif f=='load_image': sense_led.sense.load_image(**f_kwargs)
-                    elif f=='clear': sense_led.sense.clear(**f_kwargs)
-                    elif f=='show_message': sense_led.sense.show_message(**f_kwargs)
-                    elif f=='show_letter': sense_led.sense.show_letter(**f_kwargs)
-                    elif f=='wait': stop_streaming.wait(f_kwargs)
+                    if f=='set_rotation': sense_led.sense.set_rotation(*f_args)
+                    elif f=='flip_h': sense_led.sense.flip_h(f_args)
+                    elif f=='flip_v': sense_led.sense.flip_v(f_args)
+                    elif f=='set_pixels': sense_led.sense.set_pixels(*f_args)
+                    elif f=='set_pixel': sense_led.sense.set_pixel(*f_args)
+                    elif f=='load_image': sense_led.sense.load_image(*f_args)
+                    elif f=='clear': sense_led.sense.clear(*f_args)
+                    elif f=='show_message': sense_led.sense.show_message(*f_args)
+                    elif f=='show_letter': sense_led.sense.show_letter(*f_args)
+                    elif f=='wait': stop_streaming.wait(f_args)
                     else: logger.warning(f"The method '{f}' in the payload '{payload}' is not supported.")
                 except TypeError as terr:
-                    logger.info(f"Unable to call '{f}' with args '{f_kwargs}': {terr}")
+                    logger.info(f"Unable to call '{f}' with args '{f_args}': {terr}")
                 except Exception as oerr:
                     # catch other exceptions that might propagate from SenseHat methods
                     logger.warning(f"There was a non-specific error running method '{f}': {oerr}")
