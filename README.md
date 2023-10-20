@@ -22,6 +22,9 @@ That is, the `rpi-sensehat-mqtt` application publishes **sensor** and **joystick
 
 ## Install
 
+> [!NOTE]
+> [PEP668](https://peps.python.org/pep-0668/) makes it so `pip` won't install packages outside a virtual environment if packages are being managed by an external package manager (e.g., `apt`, `apk`). In order to do so anyway, you need to use the `--break-system-packages` flag when running `pip install`. The instructions below have been edited accordingly. If you don't want to do that, then the alternative is to use your OS package manager to install the requisites or better yet, use a virtual environment (e.g., conda, `venv`).
+
 This application can be installed in two non-exclusive ways. In the first and more typical scenario, you own a [SenseHAT module](https://www.raspberrypi.com/products/sense-hat/) and a compatible [RPi board](https://www.raspberrypi.com/products/) and want to use `rpi-sensehat-mqtt` to interface with the SenseHAT over MQTT. In the second and less typical case, you either do not own a RPi or the SenseHAT or both but you want to run a *virtual* SenseHAT on your Linux desktop environment and interface with it over MQTT. If your case is latter one, then take a look at the section [Emulator](#emulator); otherwise, keep on reading.
 
 For the installation procedure, it is assumed that your Raspberry Pi is running the latest version of the [Raspberry Pi OS](https://www.raspberrypi.com/software/) but the instructions might be compatible with similar distributions for the RPi. To install and use `rpi-sensehat-mqtt`, follow the procedures detailed next:
@@ -56,8 +59,8 @@ For the installation procedure, it is assumed that your Raspberry Pi is running 
 1. Update Python's package manager (`pip`) and install the required packages from `requirements.txt`:
 
     ```sh
-    pip3 install --upgrade pip
-    pip3 install -r requirements.txt
+    pip3 install --break-system-packages --upgrade pip
+    pip3 install --break-system-packages -r requirements.txt
     ```
 
     You might notice that this will install the additional packages in your user's `~/.local/bin` directory, so they will not be available globally, which is good. The drawback is that `~/.local/bin` is not part of the default `$PATH`, which is where your OS will look for executables. To fix this in the current session, run the following:
@@ -359,8 +362,8 @@ In `apt` based distros (e.g., Debian, Ubuntu, Rasbperry Pi OS), this can be done
 - Install `sense-emu` via `pip3` for the current user:
 
     ```sh
-    pip3 install --upgrade pip
-    pip3 install sense-emu
+    pip3 install --break-system-packages --upgrade pip
+    pip3 install --break-system-packages sense-emu
     ```
 
 - Ensure that `$HOME/.local/bin` is reachable in your user's `$PATH`:
