@@ -18,6 +18,7 @@ That is, the `rpi-sensehat-mqtt` application publishes **sensor** and **joystick
 1. [Log Rotation](#log-rotation)
 1. [Home Automation](#home-automation)
 1. [Emulator](#emulator)
+1. [Development](#development)
 1. [Related Docs](#related-docs)
 
 ## Install
@@ -389,6 +390,22 @@ In `apt` based distros (e.g., Debian, Ubuntu, Rasbperry Pi OS), this can be done
 You are done. Now just run `rpi-sensehat-mqtt.py` as described in [Usage](#usage) and interface with the SenseHAT via the GUI (`sense_emu_gui`).
 
 [top](#table-of-contents)
+
+## Development
+
+For development, it's recomended to create a virtual environment to manage packages and then use the [sensehat emulator](#emulator). On the projet root directory, run the following to create the virtual environment and activate it:
+
+```sh
+python3 -m venv .venv/
+source .venv/bin/activate
+```
+
+When you are done, deactivate and delete it:
+
+```sh
+deactivate
+rm -rf .venv/
+```
 
 ## Related Docs
 
