@@ -400,7 +400,25 @@ python3 -m venv .venv/
 source .venv/bin/activate
 ```
 
-When you are done, deactivate and delete it:
+Now, proceed with the standard `pip3` installs described in [Install](#install) and [Emulator](#emulator) but observe the following notes:
+
+- There's no need to use the `--break-system-packages` flag here because we are indeed using a virtual environment.
+- The venv will ignore system-wide packages required for running the emulator but we can fix this issue by installing a few of its requirements inside the venv as follows:
+
+  ```sh
+  # build dependencies
+  sudo apt install libgirepository1.0-dev
+  # install gi on the local env
+  pip3 install PyGObject
+  ```
+
+Launch the emulator:
+
+```sh
+sense_emu_gui &
+```
+
+Start developing. When you are done, deactivate and delete the virtual environment:
 
 ```sh
 deactivate
