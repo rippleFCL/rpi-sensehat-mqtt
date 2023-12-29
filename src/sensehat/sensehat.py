@@ -111,6 +111,8 @@ class SenseHatJoystick(SenseHat):
                     logger.info(f"Detected a joystick release for direction '{event.direction}.'.")
                     self.directions.put(event.direction)
                     self.stop_flag.set()
+            # wait before next loop
+            external_event.wait(1)
         # reset the stop flag before the next call
         self.stop_flag.clear()
 
