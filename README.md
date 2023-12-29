@@ -421,7 +421,7 @@ sense_emu_gui &
 You gonna need both a MQTT broker/server and client to properly debug stuff. My suggestion is to use one of the various public servers out there (e.g., [HiveMQ](https://www.hivemq.com/mqtt/public-mqtt-broker/), [Mosquitto](https://test.mosquitto.org/)) and use [MQTT Explorer](https://mqtt-explorer.com/) as client. If you are going to use the latter, make sure to edit the Advanced options in the connection window as follows:
 
 - Remove the global `#` and sys `SYS/#` topics;
-- Set a topic for your own temporary use, such as `sensehat001/#`;
+- Set a topic for your own temporary use, such as `downstairs/livingroom/sensehat01/#`;
 - Configure your `CONFIG.ini` accordingly.
 
 >[!NOTE]
