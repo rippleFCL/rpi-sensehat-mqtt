@@ -76,8 +76,8 @@ def streaming_led():
                 except Exception as oerr:
                     # catch other exceptions that might propagate from SenseHat methods
                     logger.warning(f"There was a non-specific error running method '{f}': {oerr}")
-            # wait a second before displaying any new messages from the mqtt topic
-            stop_streaming.wait(1)
+        # wait a second before displaying any new messages from the mqtt topic
+        stop_streaming.wait(2)
 
 def streaming_joystick():
     logger.info("Starting joystick directions loop.")

@@ -18,6 +18,7 @@ That is, the `rpi-sensehat-mqtt` application publishes **sensor** and **joystick
 1. [Log Rotation](#log-rotation)
 1. [Home Automation](#home-automation)
 1. [Emulator](#emulator)
+1. [Development](#development)
 1. [Related Docs](#related-docs)
 
 ## Install
@@ -389,6 +390,49 @@ In `apt` based distros (e.g., Debian, Ubuntu, Rasbperry Pi OS), this can be done
 You are done. Now just run `rpi-sensehat-mqtt.py` as described in [Usage](#usage) and interface with the SenseHAT via the GUI (`sense_emu_gui`).
 
 [top](#table-of-contents)
+
+## Development
+
+For development, it's recomended to create a virtual environment to manage packages and then use the [sensehat emulator](#emulator). On the projet root directory, run the following to create the virtual environment and activate it:
+
+```sh
+python3 -m venv .venv/
+source .venv/bin/activate
+```
+
+Now, proceed with the standard `pip3` installs described in [Install](#install) and [Emulator](#emulator) but observe the following notes:
+
+- There's no need to use the `--break-system-packages` flag here because we are indeed using a virtual environment.
+- The venv will ignore system-wide packages required for running the emulator but we can fix this issue by installing a few of its requirements inside the venv as follows:
+
+  ```sh
+  # build dependencies
+  sudo apt install libgirepository1.0-dev
+  # install gi on the local env
+  pip3 install PyGObject
+  ```
+
+Launch the emulator:
+
+```sh
+sense_emu_gui &
+```
+
+You gonna need both a MQTT broker/server and client to properly debug stuff. My suggestion is to use one of the various public servers out there (e.g., [HiveMQ](https://www.hivemq.com/mqtt/public-mqtt-broker/), [Mosquitto](https://test.mosquitto.org/)) and use [MQTT Explorer](https://mqtt-explorer.com/) as client. If you are going to use the latter, make sure to edit the Advanced options in the connection window as follows:
+
+- Remove the global `#` and sys `SYS/#` topics;
+- Set a topic for your own temporary use, such as `downstairs/livingroom/sensehat01/#`;
+- Configure your `CONFIG.ini` accordingly.
+
+>[!NOTE]
+>This should go without saying but do not publish personal info on public servers and do not abuse the service. Public servers are for temporary testing.
+
+Start developing. When you are done, deactivate and delete the virtual environment:
+
+```sh
+deactivate
+rm -rf .venv/
+```
 
 ## Related Docs
 
