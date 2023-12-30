@@ -79,46 +79,35 @@ class Configuration():
         # welcome_msg
         if 'welcome_msg' in self.__raw_config['DEFAULT']:
             self.__welcome_msg = self.__raw_config['DEFAULT'].get('welcome_msg', None)
-        
         # MQTT
-        # mqtt_client_name
         if 'mqtt' in self.__raw_config.sections():
+            # mqtt_client_name
             self.__mqtt_client_name = self.__raw_config['mqtt'].get('client_name', Configuration.MQTT_CLIENT_NAME)
-        # mqtt_broker_address
-        if 'mqtt' in self.__raw_config.sections():
+            # mqtt_broker_address
             self.__mqtt_broker_address = self.__raw_config['mqtt'].get('broker_address', Configuration.MQTT_BROKER_ADDRESS)
-        # mqtt_user
-        if 'mqtt' in self.__raw_config.sections():
+            # mqtt_user
             self.__mqtt_user = self.__raw_config['mqtt'].get('user', None)
-        # mqtt_password
-        if 'mqtt' in self.__raw_config.sections():
+            # mqtt_password
             self.__mqtt_password = self.__raw_config['mqtt'].get('password', None)
-        # mqtt_credentials_enabled
-        # assume that user is None if MQTT does not use credentials
-        self.__mqtt_credentials_enabled = True if self.mqtt_user else False
-        # mqtt_zone
-        if 'mqtt' in self.__raw_config.sections():
+            # mqtt_credentials_enabled
+            # assume that user is None if MQTT does not use credentials
+            self.__mqtt_credentials_enabled = True if self.mqtt_user else False
+            # mqtt_zone
             self.mqtt_zone = self.__raw_config['mqtt'].get('zone', Configuration.MQTT_ZONE)
-        # mqtt_room
-        if 'mqtt' in self.__raw_config.sections():
+            # mqtt_room
             self.mqtt_room = self.__raw_config['mqtt'].get('room', Configuration.MQTT_ROOM)
-        
         # SENSEHAT
-        # sensehat_set_rotation
         if 'sensehat' in self.__raw_config.sections():
+            # sensehat_set_rotation
             self.__sensehat_set_rotation = self.__raw_config['sensehat'].getint('set_rotation', Configuration.SENSEHAT_SET_ROTATION)
-        # sensehat_low_light
-        if 'sensehat' in self.__raw_config.sections():
+            # sensehat_low_light
             self.__sensehat_low_light = self.__raw_config['sensehat'].getboolean('low_light', Configuration.SENSEHAT_LOW_LIGHT)
-        # sensehat_rounding
-        if 'sensehat' in self.__raw_config.sections():
+            # sensehat_rounding
             self.sensehat_rounding = self.__raw_config['sensehat'].getint('rounding', Configuration.SENSEHAT_ROUNDING)
-        # sensehat_acceleration_multiplier
-        if 'sensehat' in self.__raw_config.sections():
+            # sensehat_acceleration_multiplier
             self.__sensehat_acceleration_multiplier= self.__raw_config['sensehat'].getfloat('acceleration_multiplier',
                 Configuration.SENSEHAT_ACCELERATION_MULTIPLIER)
-        # sensehat_gyroscope_multiplier
-        if 'sensehat' in self.__raw_config.sections():
+            # sensehat_gyroscope_multiplier
             self.__sensehat_gyroscope_multiplier = self.__raw_config['sensehat'].getfloat('gyroscope_multiplier',
                 Configuration.SENSEHAT_GYROSCOPE_MULTIPLIER)
 
