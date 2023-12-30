@@ -1,6 +1,6 @@
 # rpi-sensehat-mqtt
 
-This a Python application for the [Raspberry Pi](https://www.raspberrypi.com) (RPi) that allows interfacing with the [SenseHAT](https://www.raspberrypi.com/products/sense-hat/) over [MQTT](https://en.wikipedia.org/wiki/MQTT).
+This is a Python application for the [Raspberry Pi](https://www.raspberrypi.com) (RPi) that allows interfacing with the [SenseHAT](https://www.raspberrypi.com/products/sense-hat/) over [MQTT](https://en.wikipedia.org/wiki/MQTT).
 
 <p align="center"><img src="assets/rpi_sensehat.png" width="70%"></p>
 
@@ -8,7 +8,7 @@ Of note, the project is a fork of [mirkodcompataretti's rpi-sense-hat](https://g
 
 <p align="center"><img src="assets/concept.png" width="50%"></p>
 
-That is, the `rpi-sensehat-mqtt` application publishes **sensor** and **joystick** data to the MQTT broker to be consumed by a home automation server (e.g., [Home Assistant](https://www.home-assistant.io/)). In addition, it also subcribes to an **LED** topic to display payloads published to the broker. For instance, when an home automation publishes a message to the LED topic, the SenseHAT will consume it and display on the LED matrix.
+That is, the `rpi-sensehat-mqtt` application publishes **sensor** and **joystick** data to the MQTT broker to be consumed by a home automation server (e.g., [Home Assistant](https://www.home-assistant.io/)). In addition, it also subcribes to an **LED** topic to display payloads published to the broker. For instance, when a home automation publishes a message to the LED topic, the SenseHAT will consume and display it on the LED matrix.
 
 ## Table of Contents
 
