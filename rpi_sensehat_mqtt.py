@@ -75,22 +75,23 @@ def streaming_led():
                 for func_name, func_args in cmd.items():
                     if func_name == "delay":
                         time.sleep(*func_args)
-                    try:
-                        # https://pythonhosted.org/sense-hat/api/#led-matrix
-                        # if a valid setter, call with kwargs; else, log and skip.
-                        func = getattr(sense_led.sense, func_name, None)
-                        if func is None:
-                            logger.warning(f"The method '{func_name}' is not supported by SenseHat.")
-                            continue
-                        elif not callable(func):
-                            logger.warning(f"The method '{func_name}' is not callable.")
-                            continue
-                        func(*func_args)
-                    except TypeError as terr:
-                        logger.info(f"Unable to call '{func_name}' with args '{func_args}': {terr}")
-                    except Exception as e:
-                        # catch other exceptions that might propagate from SenseHat methods
-                        logger.warning(f"There was a non-specific error running method '{func_name}': {e}")
+                    else:
+                        try:
+                            # https://pythonhosted.org/sense-hat/api/#led-matrix
+                            # if a valid setter, call with kwargs; else, log and skip.
+                            func = getattr(sense_led.sense, func_name, None)
+                            if func is None:
+                                logger.warning(f"The method '{func_name}' is not supported by SenseHat.")
+                                continue
+                            elif not callable(func):
+                                logger.warning(f"The method '{func_name}' is not callable.")
+                                continue
+                            func(*func_args)
+                        except TypeError as terr:
+                            logger.info(f"Unable to call '{func_name}' with args '{func_args}': {terr}")
+                        except Exception as e:
+                            # catch other exceptions that might propagate from SenseHat methods
+                            logger.warning(f"There was a non-specific error running method '{func_name}': {e}")
         # wait a second before displaying any new messages from the mqtt topic
         stop_streaming.wait(2)
 
