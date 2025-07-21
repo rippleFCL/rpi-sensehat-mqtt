@@ -38,7 +38,7 @@ def streaming_sensor():
         logger.debug(f"Waiting for signal or timeout ({config.resolution}).")
         stop_streaming.wait(config.resolution)
         if not stop_streaming.is_set():
-            logger.warning(f"Reached wait timeout.")
+            logger.warning("Reached wait timeout.")
 
 def streaming_led():
     logger.info("Starting LED message loop.")
@@ -51,42 +51,42 @@ def streaming_led():
                 logger.warning(f"Could not decode mqtt message. Skipping it. Error: {mderr.error}")
                 continue
             logger.debug(f"Decoded payload: '{payload}'")
-            if not isinstance(payload, dict):
-                logger.warning(f"The payload is not a dictionary. Skipping it.")
+            if not isinstance(payload, list):
+                logger.warning("The payload is not a list. Skipping it.")
                 continue
             # payload should be in {'method' : [*args]} format
-            for f in payload.keys():
-                f_args = payload[f] if payload[f] else []
-                try:
-                    # https://pythonhosted.org/sense-hat/api/#led-matrix
-                    # if a valid setter, call with kwargs; else, log and skip.
-                    if f=='set_rotation': sense_led.sense.set_rotation(*f_args)
-                    elif f=='flip_h': sense_led.sense.flip_h(f_args)
-                    elif f=='flip_v': sense_led.sense.flip_v(f_args)
-                    elif f=='set_pixels': sense_led.sense.set_pixels(*f_args)
-                    elif f=='set_pixel': sense_led.sense.set_pixel(*f_args)
-                    elif f=='load_image': sense_led.sense.load_image(*f_args)
-                    elif f=='clear': sense_led.sense.clear(*f_args)
-                    elif f=='show_message': sense_led.sense.show_message(*f_args)
-                    elif f=='show_letter': sense_led.sense.show_letter(*f_args)
-                    elif f=='wait': stop_streaming.wait(f_args)
-                    else: logger.warning(f"The method '{f}' in the payload '{payload}' is not supported.")
-                except TypeError as terr:
-                    logger.info(f"Unable to call '{f}' with args '{f_args}': {terr}")
-                except Exception as oerr:
-                    # catch other exceptions that might propagate from SenseHat methods
-                    logger.warning(f"There was a non-specific error running method '{f}': {oerr}")
+            for cmd in payload:
+                if not isinstance(cmd, dict):
+                    logger.warning(f"The command '{cmd}' is not a dictionary. Skipping it.")
+                    continue
+                for func_name, func_args in cmd.items():
+                    try:
+                        # https://pythonhosted.org/sense-hat/api/#led-matrix
+                        # if a valid setter, call with kwargs; else, log and skip.
+                        func = getattr(sense_led.sense, func_name, None)
+                        if func is None:
+                            logger.warning(f"The method '{func_name}' is not supported by SenseHat.")
+                            continue
+                        elif not callable(func):
+                            logger.warning(f"The method '{func_name}' is not callable.")
+                            continue
+                        func(**func_args)
+                    except TypeError as terr:
+                        logger.info(f"Unable to call '{func_name}' with args '{func_args}': {terr}")
+                    except Exception as e:
+                        # catch other exceptions that might propagate from SenseHat methods
+                        logger.warning(f"There was a non-specific error running method '{func_name}': {e}")
         # wait a second before displaying any new messages from the mqtt topic
         stop_streaming.wait(2)
 
 def streaming_joystick():
     logger.info("Starting joystick directions loop.")
     while not stop_streaming.is_set():
-        logger.debug(f"Waiting for joystick directions.")
+        logger.debug("Waiting for joystick directions.")
         # pass stop_streaming flag to prevent locks in wait_directions method
         sense_joystick.wait_directions(stop_streaming)
         if not sense_joystick.directions.empty():
-            logger.debug(f"A joystick direction was detected. Publishing direction from queue.")
+            logger.debug("A joystick direction was detected. Publishing direction from queue.")
             mqtt_pub_joystick.publish(sense_joystick.joystick_data())
 
 # methods of the main logic
