@@ -7,3 +7,4 @@ __pycache__/
 # Ignore these files
 
 # Ignore these extensions
+CONFIG.ini
