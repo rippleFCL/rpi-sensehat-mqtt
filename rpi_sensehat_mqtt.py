@@ -63,6 +63,7 @@ def streaming_led():
                 logger.warning("The payload is not a list. Skipping it.")
                 continue
             # payload should be in {'method' : [*args]} format
+            logger.info(f"payload {payload} received. Executing commands.")
             for cmd in payload:
                 if not isinstance(cmd, dict):
                     logger.warning(f"The command '{cmd}' is not a dictionary. Skipping it.")
@@ -186,11 +187,10 @@ def main():
     thread_joystick = threading.Thread(target=streaming_joystick)
     threads.extend([thread_sensor, thread_led, thread_joystick])
     # finished setting up, then print welcome message if set (this blocking)
-    if config.welcome_msg: sense_led.sense.show_message(config.welcome_msg)
     # start threads and wait for interrupt signal in this one
     logger.debug(f"Starting threads '{threads}'.")
     for t in threads: t.start()
-    logger.info(f"Main thread is done. Waiting for interrupt.")
+    logger.info("Main thread is done. Waiting for interrupt.")
     pause()
 
 if __name__ == "__main__":
