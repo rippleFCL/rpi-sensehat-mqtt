@@ -24,15 +24,18 @@ import sys
 import threading
 
 # start a logging instance for this module using constants
-logging.basicConfig(
-    level=const.LOG_LEVEL,
-    format=const.LOG_FORMAT,
-    datefmt=const.LOG_DATEFMT,
-    handlers=[
-        logging.FileHandler(const.LOG_FILENAME),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
+file_handler = logging.FileHandler(const.LOG_FILENAME)
+stream_handler = logging.StreamHandler(sys.stdout)
+
+formatter = logging.Formatter(fmt=const.LOG_FORMAT, datefmt=const.LOG_DATEFMT)
+file_handler.setFormatter(formatter)
+stream_handler.setFormatter(formatter)
+root_logger = logging.getLogger()
+root_logger.setLevel(const.LOG_LEVEL)
+root_logger.addHandler(file_handler)
+root_logger.addHandler(stream_handler)
+
+
 logger = logging.getLogger(__name__)
 logger.setLevel(const.LOG_LEVEL)
 logger.debug("Initilized a logger object.")
