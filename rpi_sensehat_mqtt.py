@@ -82,7 +82,7 @@ def streaming_led():
                         elif not callable(func):
                             logger.warning(f"The method '{func_name}' is not callable.")
                             continue
-                        func(**func_args)
+                        func(*func_args)
                     except TypeError as terr:
                         logger.info(f"Unable to call '{func_name}' with args '{func_args}': {terr}")
                     except Exception as e:
