@@ -12,6 +12,7 @@ Repo: https://github.com/cgomesu/rpi-sensehat-mqtt
 """
 
 # local imports
+import time
 import src.constants as const
 import src.errors as err
 import src.utils as utils
@@ -72,6 +73,8 @@ def streaming_led():
                     logger.warning(f"The command '{cmd}' is not a dictionary. Skipping it.")
                     continue
                 for func_name, func_args in cmd.items():
+                    if func_name == "delay":
+                        time.sleep(*func_args)
                     try:
                         # https://pythonhosted.org/sense-hat/api/#led-matrix
                         # if a valid setter, call with kwargs; else, log and skip.
